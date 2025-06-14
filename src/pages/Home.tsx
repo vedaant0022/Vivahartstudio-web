@@ -4,6 +4,7 @@ import Banner from '../components/Banner';
 import BrandSlider from '../components/BrandSlider';
 import CategoriesSection from '../components/CategoriesSection';
 import BestSeller from '../components/BestSeller';
+import Footer from '../components/Footer';
 const Home: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
@@ -12,6 +13,7 @@ const Home: React.FC = () => {
       <BrandSlider />
       <CategoriesSection />
       <BestSeller />
+      <Footer />
       {/* Additional content can be added here */}
     </div>
   );
