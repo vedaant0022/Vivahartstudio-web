@@ -347,6 +347,7 @@ const Header: React.FC = () => {
 
           <div className="flex items-center space-x-4">
             {/* <FontAwesomeIcon icon={faMagnifyingGlass} className="text-xl" /> */}
+            
             {isAuthenticated && (
               <>
                 <div className="relative">
