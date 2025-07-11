@@ -4,11 +4,11 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCartShopping, faUser } from '@fortawesome/free-solid-svg-icons';
-
-import { Check, Minus, Plus, ShoppingCart, X, Trash2 } from "lucide-react";
+import {  Minus, Plus, ShoppingCart, X, Trash2 } from "lucide-react";
 import { toast } from 'react-toastify';
 import useAuthStore, { selectIsAuthenticated, selectUser, selectLogout } from '../stores/useAuthStore';
 import logo from '../assets/image/logo.png';
+import logo1 from '../assets/image/logo1.png';
 import { Button } from './ui/button';
 
 interface CartItem {
@@ -18,7 +18,6 @@ interface CartItem {
   quantity: number;
   image: string;
 }
-
 
 interface Address {
   street: string;
@@ -56,7 +55,7 @@ const Header: React.FC = () => {
     const fetchCart = async () => {
       if (isAuthenticated && localStorage.getItem('token')) {
         try {
-          const response = await fetch('http://43.204.212.179:8585/api/users/cart-users', {
+          const response = await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart-users', {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -104,6 +103,9 @@ const Header: React.FC = () => {
   // Calculate total amount
   const totalAmount = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
 
+  // Calculate displayed total with discount if above 500
+  const displayedTotal = totalAmount > 500 ? totalAmount - 60 : totalAmount;
+
   // Handle address form input changes
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -136,9 +138,6 @@ const Header: React.FC = () => {
     setAddressForm(defaultAddress || { street: '', city: '', state: '', postalCode: '', country: '', isDefault: true });
   };
 
-  // Add item to cart
-
-
   // Update quantity of an item
   const updateQuantity = async (id: string, quantity: number) => {
     if (quantity < 1) {
@@ -148,7 +147,7 @@ const Header: React.FC = () => {
 
     if (isAuthenticated && localStorage.getItem('token')) {
       try {
-        await fetch('http://43.204.212.179:8585/api/users/cart/add', {
+        await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/add', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -176,7 +175,7 @@ const Header: React.FC = () => {
   const removeItem = async (id: string) => {
     if (isAuthenticated && localStorage.getItem('token')) {
       try {
-        await fetch('http://43.204.212.179:8585/api/users/cart/remove', {
+        await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/remove', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -201,7 +200,7 @@ const Header: React.FC = () => {
     if (isAuthenticated && localStorage.getItem('token')) {
       try {
         for (const item of cartItems) {
-          await fetch('http://43.204.212.179:8585/api/users/cart/remove', {
+          await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/remove', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -243,7 +242,7 @@ const Header: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://43.204.212.179:8585/api/orders/', {
+      const response = await fetch('https://vivahartstudio-backend.onrender.com/api/orders/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -267,22 +266,22 @@ const Header: React.FC = () => {
 
         // Initialize Razorpay
         const options = {
-          key: 'rzp_test_gygBXbq4b4mzVe',
+          key: 'rzp_live_PGEwo7ezA19T7p',
           amount: order.totalAmount * 100, // Razorpay expects amount in paise
           currency: 'INR',
           name: 'Your Store Name',
           description: `Order Payment #${order._id}`,
           order_id: razorpayOrderId,
-          handler:  async () => {
+          handler: async () => {
             // No verification API; rely on backend webhook
             await clearCart();
             toast.success('Payment successful! Order placed.');
             navigate('/order-confirmation', { state: { orderId: order._id, transactionId } });
-            },
+          },
           prefill: {
             name: `${user?.firstName} ${user?.lastName}`,
             email: user?.email,
-            contact:'',
+            contact: '',
           },
           theme: {
             color: '#800080', // Purple theme
@@ -342,7 +341,7 @@ const Header: React.FC = () => {
     {/* <FontAwesomeIcon icon={faBars} className="text-xl" /> */}
 </div>
           <Link to="/" className="text-2xl font-bold text-purple-700">
-            <img src={logo} alt="logo"  className="w-50 h-17" />
+            <img src={logo} alt="logo" className="w-50 h-17" />
           </Link>
 
           <div className="flex items-center space-x-4">
@@ -478,31 +477,12 @@ const Header: React.FC = () => {
             </div>
 
             {/* Promotional Banner */}
-            <div className="bg-pink-50 p-4 border-b">
-              <div className="text-center mb-2">
-                <span className="text-sm font-medium">1,00,000+ Happy Customers</span>
-                <span className="text-pink-500 ml-1">💖</span>
-              </div>
-              <div className="flex items-center justify-center gap-4 text-xs text-gray-600">
-                <div className="flex items-center gap-1">
-                  <Check className="w-3 h-3 text-green-500" />
-                  <span>Free Shipping</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Check className="w-3 h-3 text-green-500" />
-                  <span>Secure Payments</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Check className="w-3 h-3 text-green-500" />
-                  <span>COD Available</span>
-                </div>
-              </div>
+            <div className="bg-pink-50 border-b items-center">
+            <img src={logo1} alt="logo" className="w-30 h-30 object-cover items-center ml-[170px] mt-[-10px]" />
+  
             </div>
 
-            {/* Sale Banner */}
-            <div className="bg-purple-100 p-3 text-center border-b">
-              <span className="text-sm font-medium text-purple-800">Rakhi Early Bird Sale is Live</span>
-            </div>
+          
 
             {/* Cart Items Header */}
             <div className="flex justify-between items-center p-4 border-b bg-gray-50">
@@ -582,7 +562,14 @@ const Header: React.FC = () => {
               <div className="border-t bg-white p-6 space-y-6">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Estimated Total</span>
-                  <span className="text-lg font-bold">₹ {totalAmount.toFixed(2)}</span>
+                  {totalAmount >= 500 ? (
+                    <>
+                      <span className="text-lg font-bold line-through text-gray-500">₹ {totalAmount.toFixed(2)}</span>
+                      <span className="text-lg font-bold text-green-600 ml-2">₹ {displayedTotal.toFixed(2)}</span>
+                    </>
+                  ) : (
+                    <span className="text-lg font-bold">₹ {totalAmount.toFixed(2)}</span>
+                  )}
                 </div>
 
                 {/* Address Section */}

@@ -126,6 +126,7 @@ export default function BestSellerSection() {
       console.error("Error adding to cart:", err)
     } finally {
       setAddingToCart((prev) => {
+        window.location.reload()
         const newSet = new Set(prev)
         newSet.delete(product._id)
         return newSet
