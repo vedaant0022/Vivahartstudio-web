@@ -26,7 +26,7 @@ const useAuthStore = create<AuthState>((set) => ({
   
   login: async (email: string, password: string) => {
     try {
-      const response = await fetch('http://43.204.212.179:8585/api/users/login', {
+      const response = await fetch('https://vivahartstudio-backend.onrender.com/api/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

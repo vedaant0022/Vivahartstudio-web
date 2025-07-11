@@ -47,7 +47,7 @@ export default function BestSellerSection() {
   const fetchProducts = async () => {
     try {
       setLoading(true)
-      const response = await fetch("http://43.204.212.179:8585/api/inventory/products")
+      const response = await fetch("https://vivahartstudio-backend.onrender.com/api/inventory/products")
 
       if (!response.ok) {
         throw new Error("Failed to fetch products")
@@ -98,7 +98,7 @@ export default function BestSellerSection() {
         return
       }
 
-      const response = await fetch("http://43.204.212.179:8585/api/users/cart/add", {
+      const response = await fetch("https://vivahartstudio-backend.onrender.com/api/users/cart/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,7 +126,7 @@ export default function BestSellerSection() {
       console.error("Error adding to cart:", err)
     } finally {
       setAddingToCart((prev) => {
-        window.location.reload()
+        
         const newSet = new Set(prev)
         newSet.delete(product._id)
         return newSet

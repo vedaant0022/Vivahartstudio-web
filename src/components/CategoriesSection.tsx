@@ -55,7 +55,7 @@ export default function CategoriesSection() {
       try {
         setLoading(true)
         const response = await fetch(
-          "http://43.204.212.179:8585/api/inventory/categories/686ee620362a1457eb452471/subcategories"
+          "https://vivahartstudio-backend.onrender.com/api/inventory/categories/686ee620362a1457eb452471/subcategories"
         )
         const data = await response.json()
         if (Array.isArray(data)) {
@@ -84,7 +84,7 @@ export default function CategoriesSection() {
     const fetchProducts = async () => {
       try {
         setLoading(true)
-        const url = new URL("http://43.204.212.179:8585/api/inventory/products")
+        const url = new URL("https://vivahartstudio-backend.onrender.com/api/inventory/products")
         url.searchParams.append("page", "1")
         url.searchParams.append("limit", "100")
         url.searchParams.append("sort", "-createdAt")
@@ -136,7 +136,7 @@ export default function CategoriesSection() {
 
     if (isAuthenticated) {
       try {
-        const response = await fetch('http://43.204.212.179:8585/api/users/cart/add', {
+        const response = await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/add', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -180,7 +180,7 @@ export default function CategoriesSection() {
 
     try {
       const method = isInWishlist ? 'DELETE' : 'POST'
-      const endpoint = `http://43.204.212.179:8585/api/users/wishlist/${isInWishlist ? 'remove' : 'add'}`
+      const endpoint = `https://vivahartstudio-backend.onrender.com/api/users/wishlist/${isInWishlist ? 'remove' : 'add'}`
       const response = await fetch(endpoint, {
         method,
         headers: {

@@ -73,7 +73,7 @@ export default function OrderConfirmation() {
 
       try {
         const token = localStorage.getItem("token")
-        const response = await fetch(`http://43.204.212.179:8585/api/orders/${orderId}`, {
+        const response = await fetch(`https://vivahartstudio-backend.onrender.com/api/orders/${orderId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
