@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react"
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
-import allRakhi from '../assets/image/allRakhi.jpg'
+// import allRakhi from '../assets/image/allRakhi.jpg'
 import useAuthStore, { selectIsAuthenticated } from '../stores/useAuthStore'
 
 interface Subcategory {
@@ -60,7 +60,7 @@ export default function CategoriesSection() {
         const data = await response.json()
         if (Array.isArray(data)) {
           setSubcategories([
-            { _id: "all", name: "ALL RAKHIS", image: allRakhi },
+            { _id: "all", name: "ALL RAKHIS", image: '../assets/image/allRakhi.jpg' },
             ...data.map((subcat: any) => ({
               _id: subcat._id,
               name: subcat.name,
