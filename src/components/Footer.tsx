@@ -34,9 +34,9 @@ const Footer: React.FC = () => {
           <div className="footer-column">
             <h3>About Handicraft</h3>
             <p>
-              Discover the beauty of handcrafted Rakhis and celebrate the bond of love with our unique collection. 
-              Each piece is crafted with care to make your Raksha Bandhan special.
+            At Vivah Arts Studio, we celebrate the beauty of Indian festivals through handcrafted rakhis and curated festive products made with love and tradition. Each piece is thoughtfully designed to reflect culture, emotions, and the joy of giving.
             </p>
+
             <div className="social-links">
               <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -64,26 +64,13 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Quick Links */}
-          <div className="footer-column">
-            <h3>Quick Links</h3>
-            <ul>
-              <li><Link to="/about">About Us</Link></li>
-              <li><Link to="/contact">Contact Us</Link></li>
-              <li><Link to="/shipping">Shipping Policy</Link></li>
-              <li><Link to="/returns">Returns & Exchanges</Link></li>
-              <li><Link to="/faq">FAQs</Link></li>
-            </ul>
-          </div>
+         
 
           {/* Categories */}
           <div className="footer-column">
             <h3>Categories</h3>
             <ul>
-              <li><Link to="/rakhi-collection">Rakhi Collection</Link></li>
-              <li><Link to="/western-edit">Western Edit</Link></li>
-              <li><Link to="/make-your-own">Make Your Own Set</Link></li>
-              <li><Link to="/haldi-mehndi">Haldi & Mehndi Sets</Link></li>
-              <li><Link to="/festive-handbags">Festive Handbags</Link></li>
+              <li><Link to="/">Rakhi Collection</Link></li>
             </ul>
           </div>
 
