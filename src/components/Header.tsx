@@ -56,7 +56,7 @@ const Header: React.FC = () => {
     const fetchCart = async () => {
       if (isAuthenticated && localStorage.getItem('token')) {
         try {
-          const response = await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart-users', {
+          const response = await fetch('http://43.204.212.179:8585/api/users/cart-users', {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -148,7 +148,7 @@ const Header: React.FC = () => {
 
     if (isAuthenticated && localStorage.getItem('token')) {
       try {
-        await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/add', {
+        await fetch('http://43.204.212.179:8585/api/users/cart/add', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ const Header: React.FC = () => {
   const removeItem = async (id: string) => {
     if (isAuthenticated && localStorage.getItem('token')) {
       try {
-        await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/remove', {
+        await fetch('http://43.204.212.179:8585/api/users/cart/remove', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -201,7 +201,7 @@ const Header: React.FC = () => {
     if (isAuthenticated && localStorage.getItem('token')) {
       try {
         for (const item of cartItems) {
-          await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/remove', {
+          await fetch('http://43.204.212.179:8585/api/users/cart/remove', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -243,7 +243,7 @@ const Header: React.FC = () => {
     }
 
     try {
-      const response = await fetch('https://vivahartstudio-backend.onrender.com/api/orders/', {
+      const response = await fetch('http://43.204.212.179:8585/api/orders/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

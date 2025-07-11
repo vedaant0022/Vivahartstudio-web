@@ -106,7 +106,7 @@ export default function UserProfile() {
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch("https://vivahartstudio-backend.onrender.com/api/users/profile", {
+      const response = await fetch("http://43.204.212.179:8585/api/users/profile", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -125,7 +125,7 @@ export default function UserProfile() {
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch("https://vivahartstudio-backend.onrender.com/api/orders/", {
+      const response = await fetch("http://43.204.212.179:8585/api/orders/", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
