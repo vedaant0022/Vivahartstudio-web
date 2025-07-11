@@ -14,6 +14,7 @@ export const FooterWrapper = styled.footer`
     right: 0;
     height: 6px;
     background: linear-gradient(90deg, #ffb6c1, #ffd1dc, #ffb6c1);
+    
   }
 
   .container {

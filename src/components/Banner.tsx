@@ -1,25 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import banner1 from '../assets/image/banner1.png';
+import banner2 from '../assets/image/banner2.png'; 
+import banner3 from '../assets/image/banner3.png';
 
 const bannerData = [
   {
     id: 1,
-    image: '/banner1.jpg',
+    image: banner1,
     title: 'Rakhi Edit 2025',
     subtitle: 'EARLY BIRD SALE - UPTO 40% OFF',
     buttonText: 'NOW LIVE'
   },
   {
     id: 2,
-    image: '/banner2.jpg',
+    image: banner2,
     title: 'New Potli Collection',
     subtitle: 'Exclusive Handcrafted Designs',
     buttonText: 'SHOP NOW'
   },
   {
     id: 3,
-    image: '/banner3.jpg',
+    image: banner3,
     title: 'Festival Special',
     subtitle: 'Traditional Handicrafts',
     buttonText: 'EXPLORE'
@@ -60,14 +63,8 @@ const Banner: React.FC = () => {
               className="w-full h-full object-cover"
             />
             {/* Content Overlay */}
-            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-              <div className="text-center text-white px-4">
-                <h2 className="text-6xl font-playfair italic mb-4">{banner.title}</h2>
-                <p className="text-xl mb-6">{banner.subtitle}</p>
-                <button className="bg-pink-500 hover:bg-pink-600 text-white font-bold px-8 py-2 rounded-full transition-colors">
-                  {banner.buttonText}
-                </button>
-              </div>
+            <div className="absolute inset-0 bg-transparent bg-opacity-30 flex items-center justify-center">
+
             </div>
           </div>
         ))}
