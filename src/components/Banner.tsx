@@ -49,7 +49,7 @@ const Banner: React.FC = () => {
     <div className="relative w-full h-[600px] overflow-hidden">
       {/* Banner Images */}
       <div 
-        className="flex transition-transform duration-500 ease-in-out h-full"
+        className="flex transition-transform duration-500 ease-in-out h-full "
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
         {bannerData.map((banner) => (
@@ -60,7 +60,7 @@ const Banner: React.FC = () => {
             <img 
               src={banner.image} 
               alt={banner.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
             {/* Content Overlay */}
             <div className="absolute inset-0 bg-transparent bg-opacity-30 flex items-center justify-center">

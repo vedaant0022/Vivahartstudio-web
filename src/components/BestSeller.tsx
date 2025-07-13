@@ -105,15 +105,15 @@ export default function BestSellerSection() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          productId: product._id, // Removed array
-          quantity: quantity,     // Removed array
+          productId: [product._id], // Removed array
+          quantity: [quantity]  
         }),
       })
 
       if (!response.ok) {
         throw new Error("Failed to add to cart")
       }
-
+      window.location.reload()
       toast(`Added to Cart! 🛒: ${product.name} (${quantity}x) added to your cart`, { type: "success" })
 
       // Reset quantity to 1 after adding to cart

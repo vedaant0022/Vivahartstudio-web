@@ -1,11 +1,14 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { ChevronLeft, ChevronRight, Heart } from "lucide-react"
+import { ChevronLeft, ChevronRight, Heart, Minus, Plus, ShoppingCart   } from "lucide-react"
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
 // import allRakhi from '../assets/image/allRakhi.jpg'
 import useAuthStore, { selectIsAuthenticated } from '../stores/useAuthStore'
+import { Card } from "./ui/card"
+import { CardContent } from "./ui/card"
+import rakhi from '../assets/image/rakhi.png'
 
 interface Subcategory {
   _id: string
@@ -20,10 +23,15 @@ interface Product {
   originalPrice?: number
   images: string[]
   category: string
+  shortDescription: string
   subcategory: string
   salePercentage?: number
   year: string
   stock: number
+}
+
+interface ProductQuantity {
+  [productId: string]: number
 }
 
 interface CartItem {
@@ -45,7 +53,8 @@ export default function CategoriesSection() {
   const [error, setError] = useState<string | null>(null)
   const [wishlist, setWishlist] = useState<Set<string>>(new Set()) // State to track wishlist items
   const scrollRef = useRef<HTMLDivElement>(null)
-  
+  const [quantities, setQuantities] = useState<ProductQuantity>({})
+
   // Use auth store
   const isAuthenticated = useAuthStore(selectIsAuthenticated)
 
@@ -60,7 +69,7 @@ export default function CategoriesSection() {
         const data = await response.json()
         if (Array.isArray(data)) {
           setSubcategories([
-            { _id: "all", name: "ALL RAKHIS", image: '../assets/image/allRakhi.jpg' },
+            { _id: "all", name: "ALL RAKHIS", image: rakhi },
             ...data.map((subcat: any) => ({
               _id: subcat._id,
               name: subcat.name,
@@ -126,11 +135,13 @@ export default function CategoriesSection() {
 
   // Add to cart function
   const addToCart = async (product: Product) => {
+    const quantity = quantities[product.id] || 1
+
     const newItem: CartItem = {
       id: product.id,
       name: product.name,
       price: product.price,
-      quantity: 1,
+      quantity: quantity,
       image: product.images[0] || "/placeholder.svg?height=100&width=100",
     }
 
@@ -142,11 +153,13 @@ export default function CategoriesSection() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
           },
-          body: JSON.stringify({ productId: product.id, quantity: 1 }),
+          body: JSON.stringify({ productId: [product.id], quantity: [quantity] }),
         })
         const data = await response.json()
         if (data.status !== 'success') {
           window.location.reload()
+        } else {
+          console.log('Product added to cart:', data)
         }
       } catch (err) {
         setError('Error adding product to cart')
@@ -166,6 +179,21 @@ export default function CategoriesSection() {
       }
       localStorage.setItem('cartItems', JSON.stringify(cartItems))
     }
+  }
+
+  const updateQuantity = (productId: string, change: number) => {
+    setQuantities((prev) => {
+      const currentQuantity = prev[productId] || 1
+      const newQuantity = Math.max(1, Math.min(10, currentQuantity + change)) // Min 1, Max 10
+      return {
+        ...prev,
+        [productId]: newQuantity,
+      }
+    })
+    // Force re-render to ensure UI updates immediately
+    setTimeout(() => {
+      console.log(`Updated quantity for ${productId} to ${quantities[productId] || 1}`)
+    }, 0)
   }
 
   // Toggle wishlist function
@@ -316,26 +344,21 @@ export default function CategoriesSection() {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-        {visibleProducts.map((product) => (
-          <div
-            key={product.id}
-            className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-amber-200 transform hover:-translate-y-1"
-          >
-            <div className="relative aspect-square bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden">              
-              {product.salePercentage && (
-                <Badge className="absolute top-3 right-3 z-10 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold px-3 py-1 rounded-full shadow-lg">
-                  {product.salePercentage}% OFF
-                </Badge>
-              )}
+        {visibleProducts.map((product) => {
+          const currentQuantity = quantities[product.id] || 1;
 
-              <div className="absolute top-3 left-3 z-10">
-                <span className="text-xs bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-gray-700 font-medium shadow-sm">
-                  {product.year}
-                </span>
-              </div>
+          return (
+            <Card
+            key={product.id}
+            className="group bg-white/95 backdrop-blur-sm border-2 border-amber-100 hover:border-amber-300 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
+          >
+           
+
+            <div className="relative aspect-square bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden">
+
               <button
                 onClick={() => toggleWishlist(product.id)}
-                className="absolute top-3 left-1/2 transform -translate-x-1/2 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:shadow-md transition-all duration-300 hover:scale-110"
+                className="absolute top-16 right-4 z-20 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110"
               >
                 <Heart
                   className={`w-4 h-4 transition-colors duration-300 ${
@@ -344,59 +367,96 @@ export default function CategoriesSection() {
                 />
               </button>
 
+
+
               <img
                 src={product.images[0] || "/placeholder.svg"}
                 alt={product.name}
-                width={300}
-                height={300}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                width={400}
+                height={400}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />
+
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+              <div className="absolute bottom-4 left-4 z-20">
+                {product.stock > 0 ? (
+                  <Badge className="bg-green-100 text-green-800 border border-green-200">
+                    {product.stock} in stock
+                  </Badge>
+                ) : (
+                  <Badge className="bg-red-100 text-red-800 border border-red-200">Out of stock</Badge>
+                )}
+              </div>
             </div>
-            <div className="p-4">
-              <h3 className="font-semibold text-gray-900 mb-3 line-clamp-2 min-h-[3rem] text-base leading-tight group-hover:text-amber-800 transition-colors duration-300">
+
+            <CardContent className="p-6">
+              <h3 className="font-bold text-gray-900 mb-3 line-clamp-2 min-h-[3rem] text-lg leading-tight group-hover:text-amber-800 transition-colors duration-300">
                 {product.name}
               </h3>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xl font-bold text-gray-900">₹{product.price.toFixed(2)}</span>
-                {product.originalPrice && (
-                  <span className="text-sm text-gray-500 line-through">₹{product.originalPrice.toFixed(2)}</span>
-                )}
-                {product.salePercentage && (
-                  <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    Save ₹{((product.originalPrice || 0) - product.price).toFixed(0)}
-                  </span>
-                )}
-              </div>
-              <div className="mb-4">
-                {product.stock > 0 ? (
-                  <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full font-medium">
-                    {product.stock} in stock
-                  </span>
-                ) : (
-                  <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full font-medium">
-                    Out of stock
-                  </span>
-                )}
+
+              <p className="text-sm text-gray-600 mb-4 line-clamp-2">{product.shortDescription}</p>
+
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-2xl font-bold text-gray-900">
+                  ₹{Number.parseFloat(product.price.toString()).toFixed(2)}
+                </span>
+                <span className="text-lg text-gray-500 line-through">₹{product.originalPrice?.toFixed(2)}</span>
+                {/* <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                  Save ₹{(originalPrice - Number.parseFloat(product.sellingPrice)).toFixed(0)}
+                </span> */}
               </div>
 
-              <button
-                onClick={() => {
-                  console.log("Button clicked:", product);
-                  addToCart(product);
-                }}
-                disabled={product.stock === 0}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-medium text-gray-700">Quantity:</span>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-8 h-8 rounded-full border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 bg-transparent"
+                    onClick={() => updateQuantity(product.id, -1)}
+                    disabled={currentQuantity <= 1}
+                  >
+                    <Minus className="w-3 h-3" />
+                  </Button>
+                  <span className="w-8 text-center font-semibold text-lg">{currentQuantity}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-8 h-8 rounded-full border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 bg-transparent"
+                    onClick={() => updateQuantity(product.id, 1)}
+                    disabled={currentQuantity >= 10}
+                  >
+                    <Plus className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+
+              <Button
                 className={`w-full font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 ${
                   product.stock === 0
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed hover:scale-100"
                     : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl"
                 }`}
+                onClick={() => addToCart(product)}
+                disabled={product.stock === 0 || currentQuantity === 0}
               >
-                
-                {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
-              </button>
-            </div>
-          </div>
-        ))}
+                {currentQuantity === 0 ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Adding...
+                  </div>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    {product.stock === 0 ? "Out of Stock" : `Add ${currentQuantity} to Cart`}
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+          );
+        })}
       </div>
 
       {/* View More Button */}

@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCartShopping, faUser } from '@fortawesome/free-solid-svg-icons';
-import {  Minus, Plus, ShoppingCart, X, Trash2 } from "lucide-react";
+import {  Minus, Plus, ShoppingCart, X, Trash2, Loader2, User } from "lucide-react";
 import { toast } from 'react-toastify';
 import useAuthStore, { selectIsAuthenticated, selectUser, selectLogout } from '../stores/useAuthStore';
 import logo from '../assets/image/logo.png';
@@ -42,23 +42,49 @@ const Header: React.FC = () => {
     isDefault: true,
   });
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
+  const [loadingItems, setLoadingItems] = useState<Set<string>>(new Set());
+  const [cartLoading, setCartLoading] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const debounceTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // Use exported selectors
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const user = useAuthStore(selectUser);
   const logout = useAuthStore(selectLogout);
 
+  // Skeleton loader component
+  const CartItemSkeleton = () => (
+    <div className="flex gap-4 animate-pulse p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50 rounded-2xl">
+      <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl"></div>
+      <div className="flex-1 min-w-0">
+        <div className="h-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg mb-2"></div>
+        <div className="h-3 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg w-1/2 mb-2"></div>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg"></div>
+          <div className="w-8 h-6 bg-gradient-to-r from-purple-100 to-pink-100 rounded"></div>
+          <div className="w-8 h-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg"></div>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-2">
+        <div className="h-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded w-12"></div>
+        <div className="w-8 h-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg"></div>
+      </div>
+    </div>
+  );
+
   // Load cart items and default address on mount
   useEffect(() => {
     const fetchCart = async () => {
       if (isAuthenticated && localStorage.getItem('token')) {
+        setCartLoading(true);
         try {
           const response = await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart-users', {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              // 'ngrok-skip-browser-warning': 'true',
+
             },
           });
           const data = await response.json();
@@ -82,6 +108,8 @@ const Header: React.FC = () => {
         } catch (err) {
           console.error('Error fetching cart:', err);
           toast.error('Failed to load cart');
+        } finally {
+          setCartLoading(false);
         }
       } else {
         const savedCart = localStorage.getItem('cartItems');
@@ -138,60 +166,173 @@ const Header: React.FC = () => {
     setAddressForm(defaultAddress || { street: '', city: '', state: '', postalCode: '', country: '', isDefault: true });
   };
 
+  // Debounced API call function
+  const debouncedApiCall = useCallback((productId: string, quantity: number, isAdd: boolean = true) => {
+    // Clear existing timer for this product
+    const existingTimer = debounceTimers.current.get(productId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
+    // Set new timer
+    const timer = setTimeout(async () => {
+      if (isAuthenticated && localStorage.getItem('token')) {
+        try {
+          const endpoint = isAdd ? '/api/users/cart/add' : '/api/users/cart/remove';
+          const body = isAdd 
+            ? { productId: [productId], quantity: [quantity] }
+            : { productId: productId, quantity: quantity };
+
+          await fetch(`https://vivahartstudio-backend.onrender.com${endpoint}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify(body),
+          });
+
+          // Remove loading state
+          setLoadingItems(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(productId);
+            return newSet;
+          });
+
+          toast.success(isAdd ? 'Cart updated' : 'Item updated');
+        } catch (err) {
+          console.error('Error updating cart:', err);
+          toast.error('Error updating cart');
+          // Remove loading state on error
+          setLoadingItems(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(productId);
+            return newSet;
+          });
+        }
+      }
+      
+      // Remove timer from map
+      debounceTimers.current.delete(productId);
+    }, 1000); // 1 second debounce
+
+    // Store timer
+    debounceTimers.current.set(productId, timer);
+  }, [isAuthenticated]);
+
   // Update quantity of an item
-  const updateQuantity = async (id: string, quantity: number) => {
-    if (quantity < 1) {
+  const updateQuantity = async (id: string, newQuantity: number) => {
+    if (newQuantity < 1) {
       removeItem(id);
       return;
     }
 
+    // Add loading state
+    setLoadingItems(prev => new Set(prev).add(id));
+
+    // Update UI immediately for better UX
+    setCartItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item))
+    );
+
     if (isAuthenticated && localStorage.getItem('token')) {
-      try {
-        await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/add', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ productId: id, quantity: quantity }),
-        });
-        setCartItems((prev) =>
-          prev.map((item) => (item.id === id ? { ...item, quantity } : item))
-        );
-        toast.success('Cart updated');
-      } catch (err) {
-        console.error('Error updating cart quantity:', err);
-        toast.error('Error updating cart');
-      }
+      // Use debounced API call
+      debouncedApiCall(id, newQuantity, true);
     } else {
-      setCartItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, quantity } : item))
-      );
-      toast.success('Cart updated');
+      // For non-authenticated users, just update localStorage
+      setTimeout(() => {
+        setLoadingItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
+        toast.success('Cart updated');
+      }, 500);
     }
   };
 
-  // Remove an item from the cart
+  // Remove an item from the cart (decrease quantity by 1)
+  const decreaseQuantity = async (id: string, currentQuantity: number) => {
+    if (currentQuantity <= 1) {
+      removeItem(id);
+      return;
+    }
+
+    const newQuantity = currentQuantity - 1;
+    
+    // Add loading state
+    setLoadingItems(prev => new Set(prev).add(id));
+
+    // Update UI immediately for better UX
+    setCartItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item))
+    );
+
+    if (isAuthenticated && localStorage.getItem('token')) {
+      // Use debounced API call for remove
+      debouncedApiCall(id, 1, false);
+    } else {
+      // For non-authenticated users, just update localStorage
+      setTimeout(() => {
+        setLoadingItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
+        toast.success('Cart updated');
+      }, 500);
+    }
+  };
+
+  // Remove entire item from cart (trash button)
   const removeItem = async (id: string) => {
+    const itemToRemove = cartItems.find(item => item.id === id);
+    if (!itemToRemove) return;
+
+    // Add loading state
+    setLoadingItems(prev => new Set(prev).add(id));
+
+    // Update UI immediately for better UX
+    setCartItems((prev) => prev.filter((item) => item.id !== id));
+
     if (isAuthenticated && localStorage.getItem('token')) {
       try {
+        // Remove entire quantity
         await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/remove', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
           },
-          body: JSON.stringify({ productId: id, quantity: 0 }),
+          body: JSON.stringify({ 
+            productId: id, 
+            quantity: itemToRemove.quantity 
+          }),
         });
-        setCartItems((prev) => prev.filter((item) => item.id !== id));
+
         toast.success('Item removed from cart');
       } catch (err) {
         console.error('Error removing item from cart:', err);
         toast.error('Error removing item');
+        // Revert UI change on error
+        setCartItems(prev => [...prev, itemToRemove]);
+      } finally {
+        setLoadingItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
       }
     } else {
-      setCartItems((prev) => prev.filter((item) => item.id !== id));
-      toast.success('Item removed from cart');
+      // For non-authenticated users
+      setTimeout(() => {
+        setLoadingItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
+        toast.success('Item removed from cart');
+      }, 500);
     }
   };
 
@@ -206,7 +347,7 @@ const Header: React.FC = () => {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
             },
-            body: JSON.stringify({ productId: item.id, quantity: 0 }),
+            body: JSON.stringify({ productId: item.id, quantity: item.quantity }),
           });
         }
         setCartItems([]);
@@ -266,7 +407,7 @@ const Header: React.FC = () => {
 
         // Initialize Razorpay
         const options = {
-          key: 'rzp_live_PGEwo7ezA19T7p',
+          key: 'rzp_test_0Y07z6SsWPMHIp',
           amount: order.totalAmount * 100, // Razorpay expects amount in paise
           currency: 'INR',
           name: 'Your Store Name',
@@ -317,6 +458,14 @@ const Header: React.FC = () => {
     };
   }, []);
 
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      debounceTimers.current.forEach(timer => clearTimeout(timer));
+      debounceTimers.current.clear();
+    };
+  }, []);
+
   const handleLogout = useCallback(() => {
     logout();
     setIsProfileOpen(false);
@@ -333,13 +482,13 @@ const Header: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   return (
-    <header className="w-full bg-white shadow-sm">
+    <header className="w-full bg-transparent shadow-sm">
       {/* Mobile Header */}
-      <nav className="lg:hidden">
+      <nav className="lg:hidden bg-transparent">
         <div className="flex justify-between items-center px-4 py-4">
-<div className="flex items-center space-x-4">
-    {/* <FontAwesomeIcon icon={faBars} className="text-xl" /> */}
-</div>
+          <div className="flex items-center space-x-4">
+            {/* <FontAwesomeIcon icon={faBars} className="text-xl" /> */}
+          </div>
           <Link to="/" className="text-2xl font-bold text-purple-700">
             <img src={logo} alt="logo" className="w-50 h-17" />
           </Link>
@@ -361,11 +510,9 @@ const Header: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <FontAwesomeIcon
-                  icon={faUser}
-                  className="text-xl cursor-pointer"
-                  onClick={handleAuthClick}
-                />
+                <Button variant="ghost" size="icon" className="hover:bg-purple-100" onClick={handleAuthClick}>
+                  <User className="h-5 w-5 text-purple-700" />
+                </Button>
               </>
             )}
           </div>
@@ -376,7 +523,7 @@ const Header: React.FC = () => {
       </nav>
 
       {/* Desktop Header */}
-      <nav className="hidden lg:block container mx-auto px-4 py-4">
+      <nav className="hidden lg:block container mx-auto px-4 py-4 bg-transparent">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-8">
             {isAuthenticated && (
@@ -397,8 +544,8 @@ const Header: React.FC = () => {
             )}
           </div>
 
-          <Link to={isAuthenticated ? "/" : "/"} className="text-3xl font-bold text-purple-700 ml-[100px]">
-            <img src={logo} alt="logo" width={240} height={60} className="w-60 h-17" />
+          <Link to={isAuthenticated ? "/" : "/"} className="text-3xl font-bold text-purple-700 ml-[100px] contain-content">
+            <img src={logo} alt="logo" width={240} height={60} className="w-60 h-17 " />
           </Link>
 
           <div className="flex items-center space-x-6">
@@ -478,11 +625,8 @@ const Header: React.FC = () => {
 
             {/* Promotional Banner */}
             <div className="bg-pink-50 border-b items-center">
-            <img src={logo1} alt="logo" className="w-30 h-30 object-cover items-center ml-[170px] mt-[-10px]" />
-  
+              <img src={logo1} alt="logo" className="w-30 h-30 object-cover items-center ml-[170px] mt-[-10px]" />
             </div>
-
-          
 
             {/* Cart Items Header */}
             <div className="flex justify-between items-center p-4 border-b bg-gray-50">
@@ -492,7 +636,13 @@ const Header: React.FC = () => {
 
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto">
-              {cartItems.length === 0 ? (
+              {cartLoading ? (
+                <div className="space-y-4 p-4">
+                  {[...Array(3)].map((_, index) => (
+                    <CartItemSkeleton key={index} />
+                  ))}
+                </div>
+              ) : cartItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
                   <ShoppingCart className="w-12 h-12 mb-4" />
                   <p>Your cart is empty</p>
@@ -522,19 +672,29 @@ const Header: React.FC = () => {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="w-8 h-8 bg-transparent"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="w-8 h-8 bg-transparent relative"
+                            onClick={() => decreaseQuantity(item.id, item.quantity)}
+                            disabled={loadingItems.has(item.id)}
                           >
-                            <Minus className="w-3 h-3" />
+                            {loadingItems.has(item.id) ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Minus className="w-3 h-3" />
+                            )}
                           </Button>
                           <span className="w-8 text-center text-sm">{item.quantity}</span>
                           <Button
                             variant="outline"
                             size="icon"
-                            className="w-8 h-8 bg-transparent"
+                            className="w-8 h-8 bg-transparent relative"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            disabled={loadingItems.has(item.id)}
                           >
-                            <Plus className="w-3 h-3" />
+                            {loadingItems.has(item.id) ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Plus className="w-3 h-3" />
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -545,10 +705,15 @@ const Header: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="w-8 h-8 text-gray-400 hover:text-red-500"
+                          className="w-8 h-8 text-gray-400 hover:text-red-500 relative"
                           onClick={() => removeItem(item.id)}
+                          disabled={loadingItems.has(item.id)}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {loadingItems.has(item.id) ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -563,14 +728,22 @@ const Header: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Estimated Total</span>
                   {totalAmount >= 500 ? (
-                    <>
+                    <div className="flex items-center gap-2">
                       <span className="text-lg font-bold line-through text-gray-500">₹ {totalAmount.toFixed(2)}</span>
-                      <span className="text-lg font-bold text-green-600 ml-2">₹ {displayedTotal.toFixed(2)}</span>
-                    </>
+                      <span className="text-lg font-bold text-green-600">₹ {displayedTotal.toFixed(2)}</span>
+                    </div>
                   ) : (
                     <span className="text-lg font-bold">₹ {totalAmount.toFixed(2)}</span>
                   )}
                 </div>
+
+                {totalAmount >= 500 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-sm text-green-700 font-medium">
+                      🎉 Congratulations! You saved ₹60 on this order!
+                    </p>
+                  </div>
+                )}
 
                 {/* Address Section */}
                 <div className="space-y-4">
@@ -596,22 +769,21 @@ const Header: React.FC = () => {
                       Add Address
                     </Button>
                   )}
-
                   {/* Address Form Modal */}
                   {isAddressFormOpen && (
                     <div className="bg-gray-50 p-4 rounded-lg space-y-4">
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="space-y-1">
                           <label htmlFor="street" className="text-sm font-medium text-gray-700">
-                            Street
+                            Main Address
                           </label>
                           <input
                             type="text"
                             id="street"
-                            name="street"
+                            name="mainAddress"
                             value={addressForm.street}
                             onChange={handleAddressChange}
-                            placeholder="Enter street address"
+                            placeholder="Enter main address"
                             className="w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
                           />
                         </div>

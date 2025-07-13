@@ -30,6 +30,7 @@ function App() {
         } />
         <Route path="/order-confirmation" element={<OrderConfirmation />} />
         <Route path="/profile" element={<UserProfile />} />
+
         {/* Catch all route - redirect to auth */}
       </Routes>
     </Router>

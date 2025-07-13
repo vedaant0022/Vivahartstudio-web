@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react"
+import { Star, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "./ui/button"
 import { Card, CardContent } from "./ui/card"
 
@@ -33,7 +33,7 @@ const testimonials: Testimonial[] = [
       "Great quality and fast delivery. The packaging was lovely, and the product matched the pictures perfectly. Will definitely order again for Diwali gifts!",
     rating: 5,
     image: "/placeholder.svg?height=80&width=80",
-    location: "Delhi",
+    location: "Vasai",
     product: "Festive Collection",
   },
   {
@@ -43,7 +43,7 @@ const testimonials: Testimonial[] = [
       "Vivah Arts Studio has become my go-to place for festive shopping. Their rakhis are not just rakhis – they're little works of art!",
     rating: 5,
     image: "/placeholder.svg?height=80&width=80",
-    location: "Pune",
+    location: "Mumbai",
     product: "Art Rakhis",
   },
   {
@@ -53,7 +53,7 @@ const testimonials: Testimonial[] = [
       "Loved the eco-friendly touch and attention to detail. The rakhi I ordered came with a sweet message card – such a thoughtful gesture!",
     rating: 5,
     image: "/placeholder.svg?height=80&width=80",
-    location: "Bangalore",
+    location: "Mumbai",
     product: "Eco-Friendly Rakhi",
   },
   {
@@ -63,7 +63,7 @@ const testimonials: Testimonial[] = [
       "We ordered bulk handmade rakhis for our office Raksha Bandhan event – everyone was impressed! Each one was different and beautifully made.",
     rating: 5,
     image: "/placeholder.svg?height=80&width=80",
-    location: "Gurgaon",
+    location: "Mumbai",
     product: "Bulk Order",
   },
   {
@@ -73,7 +73,7 @@ const testimonials: Testimonial[] = [
       "Their festive collection is so elegant and affordable. Got compliments on everything I ordered – especially the candles and gift boxes!",
     rating: 5,
     image: "/placeholder.svg?height=80&width=80",
-    location: "Hyderabad",
+    location: "Vasai",
     product: "Gift Collection",
   },
 ]
@@ -136,22 +136,7 @@ export default function TestimonialsSection() {
             <CardContent className="p-8 md:p-12">
               <div className="flex flex-col md:flex-row items-center gap-8">
                 {/* Customer Image */}
-                <div className="flex-shrink-0">
-                  <div className="relative">
-                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-yellow-200 shadow-lg">
-                        <img
-                        src={testimonials[currentIndex].image || "/placeholder.svg"}
-                        alt={testimonials[currentIndex].name}
-                        width={128}
-                        height={128}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full p-2 shadow-lg">
-                      <Quote className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                </div>
+
 
                 {/* Testimonial Content */}
                 <div className="flex-1 text-center md:text-left">

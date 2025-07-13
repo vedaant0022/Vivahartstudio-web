@@ -11,7 +11,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     setTimeout(() => {
       setIsLoading(false);
-    }, 3000);
+    },1000);
   }, []);
   if (isLoading) {
     return <FullScreenLoader message="Loading your experience..." isVisible={isLoading} />;
