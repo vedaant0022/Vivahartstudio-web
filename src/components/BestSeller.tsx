@@ -55,9 +55,9 @@ export default function BestSellerSection() {
 
       const data = await response.json()
 
-      // Randomly shuffle and select 8 products for best sellers (2 rows of 4)
-      const shuffledProducts = data.data.sort(() => 0.5 - Math.random()) // Sort the data.data array
-      const bestSellers = shuffledProducts.slice(0, 8)
+      // Randomly shuffle and select only 4 products for best sellers (single row)
+      const shuffledProducts = data.data.sort(() => 0.5 - Math.random())
+      const bestSellers = shuffledProducts.slice(0, 4)
 
       setProducts(bestSellers)
 
@@ -105,7 +105,7 @@ export default function BestSellerSection() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          productId: [product._id], // Removed array
+          productId: [product._id],
           quantity: [quantity]  
         }),
       })
@@ -126,7 +126,6 @@ export default function BestSellerSection() {
       console.error("Error adding to cart:", err)
     } finally {
       setAddingToCart((prev) => {
-        
         const newSet = new Set(prev)
         newSet.delete(product._id)
         return newSet
@@ -204,10 +203,6 @@ export default function BestSellerSection() {
 
       <div className="max-w-7xl mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
-          {/* <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg mb-6">
-            <TrendingUp className="w-5 h-5 text-amber-600" />
-            <span className="text-amber-800 font-semibold">Best Sellers</span>
-          </div> */}
           <h2 className="text-4xl md:text-5xl font-bold text-amber-900 mb-4">BEST SELLING RAKHIS</h2>
           <p className="text-xl text-amber-700 max-w-2xl mx-auto">
             Discover our most loved rakhi designs, handpicked by thousands of happy customers
@@ -215,8 +210,9 @@ export default function BestSellerSection() {
           <div className="w-24 h-1 bg-gradient-to-r from-amber-400 to-orange-400 mx-auto mt-6"></div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-          {products.map((product, index) => {
+        {/* Single row of 4 products */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {products.map((product) => {
             const { originalPrice, discount } = calculateDiscount(product.sellingPrice)
             const quantity = quantities[product._id] || 1
             const isAddingToCart = addingToCart.has(product._id)
@@ -226,13 +222,12 @@ export default function BestSellerSection() {
                 key={product._id}
                 className="group bg-white/95 backdrop-blur-sm border-2 border-amber-100 hover:border-amber-300 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
               >
-                {index < 4 && (
-                  <div className="absolute top-4 left-4 z-20">
-                    <Badge className="bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold px-3 py-1 rounded-full shadow-lg">
-                      🔥 Best Seller
-                    </Badge>
-                  </div>
-                )}
+                {/* Best Seller badge for all 4 products */}
+                <div className="absolute top-4 left-4 z-20">
+                  <Badge className="bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold px-3 py-1 rounded-full shadow-lg">
+                    🔥 Best Seller
+                  </Badge>
+                </div>
 
                 <div className="relative aspect-square bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden">
                   <Badge className="absolute top-4 right-4 z-20 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold px-3 py-1 rounded-full shadow-lg">
@@ -287,9 +282,6 @@ export default function BestSellerSection() {
                       ₹{Number.parseFloat(product.sellingPrice).toFixed(2)}
                     </span>
                     <span className="text-lg text-gray-500 line-through">₹{originalPrice.toFixed(2)}</span>
-                    {/* <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                      Save ₹{(originalPrice - Number.parseFloat(product.sellingPrice)).toFixed(0)}
-                    </span> */}
                   </div>
 
                   <div className="flex items-center justify-between mb-4">
@@ -343,8 +335,6 @@ export default function BestSellerSection() {
             )
           })}
         </div>
-
-
       </div>
     </section>
   )

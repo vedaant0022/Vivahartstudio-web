@@ -17,12 +17,12 @@ import {
   Twitter,
   Youtube,
   Send,
-  Sparkles,
   Gift,
   Award,
   Shield,
   Truck,
 } from "lucide-react"
+import logo from '../assets/image/logo.png'
 
 export default function Footer() {
   const [email, setEmail] = useState("")
@@ -126,13 +126,9 @@ export default function Footer() {
               <div className="lg:col-span-1">
                 <div className="mb-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl shadow-lg">
-                      <Sparkles className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-white">Vivah Art Studio</h2>
-                      <p className="text-yellow-300 text-sm font-medium">Crafting Beautiful Moments</p>
-                    </div>
+
+                     <img src={logo} alt="logo" width={240} height={60} className="w-[200px] h-[90px] " />
+                
                   </div>
                   <p className="text-white/80 leading-relaxed mb-6">
                     At Vivah Arts Studio, we celebrate the beauty of Indian festivals through handcrafted rakhis and
@@ -150,15 +146,15 @@ export default function Footer() {
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-3 text-white/80">
                     <Phone className="w-4 h-4 text-yellow-300" />
-                    <span>+91 98765 43210</span>
+                    <span>+91 8308595550</span>
                   </div>
                   <div className="flex items-center gap-3 text-white/80">
                     <Mail className="w-4 h-4 text-yellow-300" />
-                    <span>hello@vivahartstudio.com</span>
+                    <span>vivahartstudio@gmail.com</span>
                   </div>
                   <div className="flex items-start gap-3 text-white/80">
                     <MapPin className="w-4 h-4 text-yellow-300 mt-1" />
-                    <span>123 Craft Street, Mumbai, Maharashtra 400001</span>
+                    <span>Vivah Art Studio, Shop No.310, Thakur Arcade, Virar West- 401303</span>
                   </div>
                 </div>
 
