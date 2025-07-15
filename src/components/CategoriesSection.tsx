@@ -1,10 +1,9 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { ChevronLeft, ChevronRight, Heart, Minus, Plus, ShoppingCart   } from "lucide-react"
+import { ChevronLeft, ChevronRight, Heart, Minus, Plus, ShoppingCart } from "lucide-react"
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
-// import allRakhi from '../assets/image/allRakhi.jpg'
 import useAuthStore, { selectIsAuthenticated } from '../stores/useAuthStore'
 import { Card } from "./ui/card"
 import { CardContent } from "./ui/card"
@@ -45,17 +44,17 @@ interface CartItem {
 export default function CategoriesSection() {
   const [selectedSubcategory, setSelectedSubcategory] = useState("all")
   const [subcategories, setSubcategories] = useState<Subcategory[]>([
-    { _id: "all", name: "ALL RAKHIS", image: "/placeholder.svg?height=80&width=80" },
+    { _id: "all", name: "ALL RAKHIS", image: rakhi },
   ])
   const [products, setProducts] = useState<Product[]>([])
-  const [visibleRows, setVisibleRows] = useState(3)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [productsPerPage] = useState(12) // Number of products per page
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [wishlist, setWishlist] = useState<Set<string>>(new Set()) // State to track wishlist items
+  const [wishlist, setWishlist] = useState<Set<string>>(new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
   const [quantities, setQuantities] = useState<ProductQuantity>({})
-
-  // Use auth store
   const isAuthenticated = useAuthStore(selectIsAuthenticated)
 
   // Fetch subcategories for Rakhi category on mount
@@ -64,7 +63,7 @@ export default function CategoriesSection() {
       try {
         setLoading(true)
         const response = await fetch(
-          "https://vivahartstudio-backend.onrender.com/api/inventory/categories/686ee620362a1457eb452471/subcategories"
+          "https://api.vivahartstudio.com/api/inventory/categories/686ee620362a1457eb452471/subcategories"
         )
         const data = await response.json()
         if (Array.isArray(data)) {
@@ -88,14 +87,14 @@ export default function CategoriesSection() {
     fetchSubcategories()
   }, [])
 
-  // Fetch products based on selected subcategory
+  // Fetch products based on selected subcategory and current page
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true)
-        const url = new URL("https://vivahartstudio-backend.onrender.com/api/inventory/products")
-        url.searchParams.append("page", "1")
-        url.searchParams.append("limit", "100")
+        const url = new URL("https://api.vivahartstudio.com/api/inventory/products")
+        url.searchParams.append("page", currentPage.toString())
+        url.searchParams.append("limit", productsPerPage.toString())
         url.searchParams.append("sort", "-createdAt")
         url.searchParams.append("category", "686ee620362a1457eb452471")
         if (selectedSubcategory !== "all") {
@@ -121,6 +120,7 @@ export default function CategoriesSection() {
               stock: item.totalStock,
             }))
           )
+          setTotalPages(Math.ceil(data.total / productsPerPage))
         } else {
           setError("Failed to fetch products")
         }
@@ -131,7 +131,7 @@ export default function CategoriesSection() {
       }
     }
     fetchProducts()
-  }, [selectedSubcategory])
+  }, [selectedSubcategory, currentPage, productsPerPage])
 
   // Add to cart function
   const addToCart = async (product: Product) => {
@@ -147,7 +147,7 @@ export default function CategoriesSection() {
 
     if (isAuthenticated) {
       try {
-        const response = await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/add', {
+        const response = await fetch('https://api.vivahartstudio.com/api/users/cart/add', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -171,7 +171,7 @@ export default function CategoriesSection() {
       if (existingItem) {
         cartItems.forEach((item) => {
           if (item.id === product.id) {
-            item.quantity += 1
+            item.quantity += quantity
           }
         })
       } else {
@@ -184,16 +184,12 @@ export default function CategoriesSection() {
   const updateQuantity = (productId: string, change: number) => {
     setQuantities((prev) => {
       const currentQuantity = prev[productId] || 1
-      const newQuantity = Math.max(1, Math.min(10, currentQuantity + change)) // Min 1, Max 10
+      const newQuantity = Math.max(1, Math.min(10, currentQuantity + change))
       return {
         ...prev,
         [productId]: newQuantity,
       }
     })
-    // Force re-render to ensure UI updates immediately
-    setTimeout(() => {
-      console.log(`Updated quantity for ${productId} to ${quantities[productId] || 1}`)
-    }, 0)
   }
 
   // Toggle wishlist function
@@ -208,7 +204,7 @@ export default function CategoriesSection() {
 
     try {
       const method = isInWishlist ? 'DELETE' : 'POST'
-      const endpoint = `https://vivahartstudio-backend.onrender.com/api/users/wishlist/${isInWishlist ? 'remove' : 'add'}`
+      const endpoint = `https://api.vivahartstudio.com/api/users/wishlist/${isInWishlist ? 'remove' : 'add'}`
       const response = await fetch(endpoint, {
         method,
         headers: {
@@ -237,15 +233,6 @@ export default function CategoriesSection() {
     }
   }
 
-  const filteredProducts =
-    selectedSubcategory === "all"
-      ? products
-      : products.filter((product) => product.subcategory === subcategories.find((sub) => sub._id === selectedSubcategory)?.name)
-
-  const productsPerRow = 4
-  const visibleProducts = filteredProducts.slice(0, visibleRows * productsPerRow)
-  const hasMoreProducts = filteredProducts.length > visibleProducts.length
-
   const scrollLeft = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollBy({ left: -200, behavior: "smooth" })
@@ -258,13 +245,16 @@ export default function CategoriesSection() {
     }
   }
 
-  const handleViewMore = () => {
-    setVisibleRows((prev) => prev + 3)
-  }
-
   const handleSubcategoryChange = (subcategoryId: string) => {
     setSelectedSubcategory(subcategoryId)
-    setVisibleRows(3)
+    setCurrentPage(1) // Reset to first page when changing subcategory
+  }
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+      {loading && <p className="text-center">Loading...</p>}
+    }
   }
 
   return (
@@ -306,7 +296,7 @@ export default function CategoriesSection() {
                 onClick={() => handleSubcategoryChange(subcategory._id)}
               >
                 <div
-                  className={`w-30 h-30 rounded-full border-2 overflow-hidden mb-2 ${
+                  className={`w-20 h-20 rounded-full border-2 overflow-hidden mb-2 ${
                     selectedSubcategory === subcategory._id
                       ? "border-purple-500 shadow-lg"
                       : "border-pink-200 hover:border-purple-300"
@@ -344,136 +334,146 @@ export default function CategoriesSection() {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-        {visibleProducts.map((product) => {
-          const currentQuantity = quantities[product.id] || 1;
+        {products.map((product) => {
+          const currentQuantity = quantities[product.id] || 1
 
           return (
             <Card
-            key={product.id}
-            className="group bg-white/95 backdrop-blur-sm border-2 border-amber-100 hover:border-amber-300 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
-          >
-           
+              key={product.id}
+              className="group bg-white/95 backdrop-blur-sm border-2 border-amber-100 hover:border-amber-300 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
+            >
+              <div className="relative aspect-square bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden">
+                <button
+                  onClick={() => toggleWishlist(product.id)}
+                  className="absolute top-4 right-4 z-20 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110"
+                >
+                  <Heart
+                    className={`w-4 h-4 transition-colors duration-300 ${
+                      wishlist.has(product.id) ? "fill-red-500 text-red-500" : "text-gray-600 hover:text-red-500"
+                    }`}
+                  />
+                </button>
 
-            <div className="relative aspect-square bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden">
-
-              <button
-                onClick={() => toggleWishlist(product.id)}
-                className="absolute top-16 right-4 z-20 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110"
-              >
-                <Heart
-                  className={`w-4 h-4 transition-colors duration-300 ${
-                    wishlist.has(product.id) ? "fill-red-500 text-red-500" : "text-gray-600 hover:text-red-500"
-                  }`}
+                <img
+                  src={product.images[0] || "/placeholder.svg"}
+                  alt={product.name}
+                  width={400}
+                  height={400}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />
-              </button>
 
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-
-              <img
-                src={product.images[0] || "/placeholder.svg"}
-                alt={product.name}
-                width={400}
-                height={400}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-              />
-
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-              <div className="absolute bottom-4 left-4 z-20">
-                {product.stock > 0 ? (
-                  <Badge className="bg-green-100 text-green-800 border border-green-200">
-                    {product.stock} in stock
-                  </Badge>
-                ) : (
-                  <Badge className="bg-red-100 text-red-800 border border-red-200">Out of stock</Badge>
-                )}
-              </div>
-            </div>
-
-            <CardContent className="p-6">
-              <h3 className="font-bold text-gray-900 mb-3 line-clamp-2 min-h-[3rem] text-lg leading-tight group-hover:text-amber-800 transition-colors duration-300">
-                {product.name}
-              </h3>
-
-              <p className="text-sm text-gray-600 mb-4 line-clamp-2">{product.shortDescription}</p>
-
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-2xl font-bold text-gray-900">
-                  ₹{Number.parseFloat(product.price.toString()).toFixed(2)}
-                </span>
-                <span className="text-lg text-gray-500 line-through">₹{product.originalPrice?.toFixed(2)}</span>
-                {/* <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                  Save ₹{(originalPrice - Number.parseFloat(product.sellingPrice)).toFixed(0)}
-                </span> */}
-              </div>
-
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium text-gray-700">Quantity:</span>
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="w-8 h-8 rounded-full border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 bg-transparent"
-                    onClick={() => updateQuantity(product.id, -1)}
-                    disabled={currentQuantity <= 1}
-                  >
-                    <Minus className="w-3 h-3" />
-                  </Button>
-                  <span className="w-8 text-center font-semibold text-lg">{currentQuantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="w-8 h-8 rounded-full border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 bg-transparent"
-                    onClick={() => updateQuantity(product.id, 1)}
-                    disabled={currentQuantity >= 10}
-                  >
-                    <Plus className="w-3 h-3" />
-                  </Button>
+                <div className="absolute bottom-4 left-4 z-20">
+                  {product.stock > 0 ? (
+                    <Badge className="bg-green-100 text-green-800 border border-green-200">
+                      {product.stock} in stock
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-red-100 text-red-800 border border-red-200">Out of stock</Badge>
+                  )}
                 </div>
               </div>
 
-              <Button
-                className={`w-full font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 ${
-                  product.stock === 0
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed hover:scale-100"
-                    : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl"
-                }`}
-                onClick={() => addToCart(product)}
-                disabled={product.stock === 0 || currentQuantity === 0}
-              >
-                {currentQuantity === 0 ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Adding...
+              <CardContent className="p-6">
+                <h3 className="font-bold text-gray-900 mb-3 line-clamp-2 min-h-[3rem] text-lg leading-tight group-hover:text-amber-800 transition-colors duration-300">
+                  {product.name}
+                </h3>
+
+                <p className="text-sm text-gray-600 mb-4 line-clamp-2">{product.shortDescription}</p>
+
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="text-2xl font-bold text-gray-900">
+                    ₹{Number.parseFloat(product.price.toString()).toFixed(2)}
+                  </span>
+                  <span className="text-lg text-gray-500 line-through">
+                    ₹{product.originalPrice?.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm font-medium text-gray-700">Quantity:</span>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="w-8 h-8 rounded-full border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 bg-transparent"
+                      onClick={() => updateQuantity(product.id, -1)}
+                      disabled={currentQuantity <= 1}
+                    >
+                      <Minus className="w-3 h-3" />
+                    </Button>
+                    <span className="w-8 text-center font-semibold text-lg">{currentQuantity}</span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="w-8 h-8 rounded-full border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 bg-transparent"
+                      onClick={() => updateQuantity(product.id, 1)}
+                      disabled={currentQuantity >= 10}
+                    >
+                      <Plus className="w-3 h-3" />
+                    </Button>
                   </div>
-                ) : (
-                  <>
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    {product.stock === 0 ? "Out of Stock" : `Add ${currentQuantity} to Cart`}
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-          );
+                </div>
+
+                <Button
+                  className={`w-full font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 ${
+                    product.stock === 0
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed hover:scale-100"
+                      : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl"
+                  }`}
+                  onClick={() => addToCart(product)}
+                  disabled={product.stock === 0}
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  {product.stock === 0 ? "Out of Stock" : `Add ${currentQuantity} to Cart`}
+                </Button>
+              </CardContent>
+            </Card>
+          )
         })}
       </div>
 
-      {/* View More Button */}
-      {hasMoreProducts && (
-        <div className="text-center">
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-8">
           <Button
-            onClick={handleViewMore}
             variant="outline"
-            className="px-8 py-2 border-purple-200 text-purple-600 hover:bg-purple-50 bg-transparent"
+            size="icon"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="bg-white border-amber-200 hover:bg-amber-50 z-10"
           >
-            View More Products
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+            <Button
+              key={page}
+              variant={currentPage === page ? "default" : "outline"}
+              className={`${
+                currentPage === page
+                  ? "bg-amber-500 text-white hover:bg-amber-600"
+                  : "bg-white border-amber-200 hover:bg-amber-50"
+              } z-10`}
+              onClick={() => handlePageChange(page)}
+            >
+              {page}
+            </Button>
+          ))}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="bg-white border-amber-200 hover:bg-amber-50 z-10"
+          >
+            <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       )}
 
       {/* No Products Message */}
-      {filteredProducts.length === 0 && !loading && (
+      {products.length === 0 && !loading && (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">No products found in this category.</p>
         </div>

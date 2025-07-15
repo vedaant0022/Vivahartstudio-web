@@ -79,7 +79,7 @@ const Header: React.FC = () => {
       if (isAuthenticated && localStorage.getItem('token')) {
         setCartLoading(true);
         try {
-          const response = await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart-users', {
+          const response = await fetch('https://api.vivahartstudio.com/api/users/cart-users', {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -183,7 +183,7 @@ const Header: React.FC = () => {
             ? { productId: [productId], quantity: [quantity] }
             : { productId: productId, quantity: quantity };
 
-          await fetch(`https://vivahartstudio-backend.onrender.com${endpoint}`, {
+          await fetch(`https://api.vivahartstudio.com${endpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -298,7 +298,7 @@ const Header: React.FC = () => {
     if (isAuthenticated && localStorage.getItem('token')) {
       try {
         // Remove entire quantity
-        await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/remove', {
+        await fetch('https://api.vivahartstudio.com/api/users/cart/remove', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -341,7 +341,7 @@ const Header: React.FC = () => {
     if (isAuthenticated && localStorage.getItem('token')) {
       try {
         for (const item of cartItems) {
-          await fetch('https://vivahartstudio-backend.onrender.com/api/users/cart/remove', {
+          await fetch('https://api.vivahartstudio.com/api/users/cart/remove', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -383,7 +383,7 @@ const Header: React.FC = () => {
     }
 
     try {
-      const response = await fetch('https://vivahartstudio-backend.onrender.com/api/orders/', {
+      const response = await fetch('https://api.vivahartstudio.com/api/orders/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
