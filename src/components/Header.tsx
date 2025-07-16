@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCartShopping, faUser } from '@fortawesome/free-solid-svg-icons';
-import {  Minus, Plus, ShoppingCart, X, Trash2, Loader2, User } from "lucide-react";
+import { Minus, Plus, ShoppingCart, X, Trash2, Loader2, User } from "lucide-react";
 import { toast } from 'react-toastify';
 import useAuthStore, { selectIsAuthenticated, selectUser, selectLogout } from '../stores/useAuthStore';
 import logo from '../assets/image/logo.png';
@@ -44,16 +44,14 @@ const Header: React.FC = () => {
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [loadingItems, setLoadingItems] = useState<Set<string>>(new Set());
   const [cartLoading, setCartLoading] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
+  const desktopProfileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const debounceTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
-  // Use exported selectors
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const user = useAuthStore(selectUser);
   const logout = useAuthStore(selectLogout);
 
-  // Skeleton loader component
   const CartItemSkeleton = () => (
     <div className="flex gap-4 animate-pulse p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50 rounded-2xl">
       <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl"></div>
@@ -73,7 +71,6 @@ const Header: React.FC = () => {
     </div>
   );
 
-  // Load cart items and default address on mount
   useEffect(() => {
     const fetchCart = async () => {
       if (isAuthenticated && localStorage.getItem('token')) {
@@ -83,8 +80,6 @@ const Header: React.FC = () => {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
-              // 'ngrok-skip-browser-warning': 'true',
-
             },
           });
           const data = await response.json();
@@ -98,7 +93,6 @@ const Header: React.FC = () => {
                 image: item.product.images[0]?.url || '/placeholder.svg?height=100&width=100',
               }))
             );
-            // Set default address
             const defaultAddr = data.data[0].addresses?.find((addr: Address) => addr.isDefault);
             if (defaultAddr) {
               setDefaultAddress(defaultAddr);
@@ -121,35 +115,27 @@ const Header: React.FC = () => {
     fetchCart();
   }, [isAuthenticated]);
 
-  // Save cart to localStorage for non-authenticated users
   useEffect(() => {
     if (!isAuthenticated) {
       localStorage.setItem('cartItems', JSON.stringify(cartItems));
     }
   }, [cartItems, isAuthenticated]);
 
-  // Calculate total amount
   const totalAmount = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-
-  // Calculate displayed total with discount if above 500
   const displayedTotal = totalAmount > 500 ? totalAmount - 60 : totalAmount;
 
-  // Handle address form input changes
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setAddressForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Open address form
   const openAddressForm = () => {
     setIsAddressFormOpen(true);
-    // Prepopulate form with defaultAddress if available
     if (defaultAddress) {
       setAddressForm(defaultAddress);
     }
   };
 
-  // Save address locally and close form
   const saveAddress = () => {
     if (!addressForm.street || !addressForm.city || !addressForm.state || !addressForm.postalCode || !addressForm.country) {
       toast.error('Please fill in all address fields');
@@ -160,21 +146,17 @@ const Header: React.FC = () => {
     toast.success('Address saved successfully');
   };
 
-  // Cancel address form
   const cancelAddressForm = () => {
     setIsAddressFormOpen(false);
     setAddressForm(defaultAddress || { street: '', city: '', state: '', postalCode: '', country: '', isDefault: true });
   };
 
-  // Debounced API call function
   const debouncedApiCall = useCallback((productId: string, quantity: number, isAdd: boolean = true) => {
-    // Clear existing timer for this product
     const existingTimer = debounceTimers.current.get(productId);
     if (existingTimer) {
       clearTimeout(existingTimer);
     }
 
-    // Set new timer
     const timer = setTimeout(async () => {
       if (isAuthenticated && localStorage.getItem('token')) {
         try {
@@ -192,7 +174,6 @@ const Header: React.FC = () => {
             body: JSON.stringify(body),
           });
 
-          // Remove loading state
           setLoadingItems(prev => {
             const newSet = new Set(prev);
             newSet.delete(productId);
@@ -203,7 +184,6 @@ const Header: React.FC = () => {
         } catch (err) {
           console.error('Error updating cart:', err);
           toast.error('Error updating cart');
-          // Remove loading state on error
           setLoadingItems(prev => {
             const newSet = new Set(prev);
             newSet.delete(productId);
@@ -211,35 +191,26 @@ const Header: React.FC = () => {
           });
         }
       }
-      
-      // Remove timer from map
       debounceTimers.current.delete(productId);
-    }, 1000); // 1 second debounce
+    }, 1000);
 
-    // Store timer
     debounceTimers.current.set(productId, timer);
   }, [isAuthenticated]);
 
-  // Update quantity of an item
   const updateQuantity = async (id: string, newQuantity: number) => {
     if (newQuantity < 1) {
       removeItem(id);
       return;
     }
 
-    // Add loading state
     setLoadingItems(prev => new Set(prev).add(id));
-
-    // Update UI immediately for better UX
     setCartItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item))
     );
 
     if (isAuthenticated && localStorage.getItem('token')) {
-      // Use debounced API call
       debouncedApiCall(id, newQuantity, true);
     } else {
-      // For non-authenticated users, just update localStorage
       setTimeout(() => {
         setLoadingItems(prev => {
           const newSet = new Set(prev);
@@ -251,7 +222,6 @@ const Header: React.FC = () => {
     }
   };
 
-  // Remove an item from the cart (decrease quantity by 1)
   const decreaseQuantity = async (id: string, currentQuantity: number) => {
     if (currentQuantity <= 1) {
       removeItem(id);
@@ -259,20 +229,14 @@ const Header: React.FC = () => {
     }
 
     const newQuantity = currentQuantity - 1;
-    
-    // Add loading state
     setLoadingItems(prev => new Set(prev).add(id));
-
-    // Update UI immediately for better UX
     setCartItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item))
     );
 
     if (isAuthenticated && localStorage.getItem('token')) {
-      // Use debounced API call for remove
       debouncedApiCall(id, 1, false);
     } else {
-      // For non-authenticated users, just update localStorage
       setTimeout(() => {
         setLoadingItems(prev => {
           const newSet = new Set(prev);
@@ -284,20 +248,15 @@ const Header: React.FC = () => {
     }
   };
 
-  // Remove entire item from cart (trash button)
   const removeItem = async (id: string) => {
     const itemToRemove = cartItems.find(item => item.id === id);
     if (!itemToRemove) return;
 
-    // Add loading state
     setLoadingItems(prev => new Set(prev).add(id));
-
-    // Update UI immediately for better UX
     setCartItems((prev) => prev.filter((item) => item.id !== id));
 
     if (isAuthenticated && localStorage.getItem('token')) {
       try {
-        // Remove entire quantity
         await fetch('https://api.vivahartstudio.com/api/users/cart/remove', {
           method: 'POST',
           headers: {
@@ -314,7 +273,6 @@ const Header: React.FC = () => {
       } catch (err) {
         console.error('Error removing item from cart:', err);
         toast.error('Error removing item');
-        // Revert UI change on error
         setCartItems(prev => [...prev, itemToRemove]);
       } finally {
         setLoadingItems(prev => {
@@ -324,7 +282,6 @@ const Header: React.FC = () => {
         });
       }
     } else {
-      // For non-authenticated users
       setTimeout(() => {
         setLoadingItems(prev => {
           const newSet = new Set(prev);
@@ -336,7 +293,6 @@ const Header: React.FC = () => {
     }
   };
 
-  // Clear cart after successful order
   const clearCart = async () => {
     if (isAuthenticated && localStorage.getItem('token')) {
       try {
@@ -364,7 +320,6 @@ const Header: React.FC = () => {
     }
   };
 
-  // Handle checkout with Razorpay
   const handleCheckout = async () => {
     if (!isAuthenticated || !localStorage.getItem('token')) {
       toast.error('Please log in to proceed with checkout');
@@ -405,16 +360,14 @@ const Header: React.FC = () => {
       if (data.message === 'Order created, proceed to payment') {
         const { razorpayOrderId, order, transactionId } = data;
 
-        // Initialize Razorpay
         const options = {
           key: 'rzp_test_0Y07z6SsWPMHIp',
-          amount: order.totalAmount * 100, // Razorpay expects amount in paise
+          amount: order.totalAmount * 100,
           currency: 'INR',
           name: 'Your Store Name',
           description: `Order Payment #${order._id}`,
           order_id: razorpayOrderId,
           handler: async () => {
-            // No verification API; rely on backend webhook
             await clearCart();
             toast.success('Payment successful! Order placed.');
             navigate('/order-confirmation', { state: { orderId: order._id, transactionId } });
@@ -425,7 +378,7 @@ const Header: React.FC = () => {
             contact: '',
           },
           theme: {
-            color: '#800080', // Purple theme
+            color: '#800080',
           },
         };
 
@@ -444,21 +397,16 @@ const Header: React.FC = () => {
     }
   };
 
-  // Handle click outside of profile dropdown
+  // Click-outside handler for desktop profile dropdown only
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setIsProfileOpen(false);
-      }
-    };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+
+    // document.addEventListener('mousedown', handleClickOutside);
+    // return () => {
+    //   document.removeEventListener('mousedown', handleClickOutside);
+    // };
   }, []);
 
-  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       debounceTimers.current.forEach(timer => clearTimeout(timer));
@@ -470,7 +418,7 @@ const Header: React.FC = () => {
     logout();
     setIsProfileOpen(false);
     navigate('/');
-    localStorage.removeItem('token'); // Clear token on logout
+    localStorage.removeItem('token');
   }, [logout, navigate]);
 
   const handleAuthClick = useCallback(() => {
@@ -481,45 +429,98 @@ const Header: React.FC = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Handle backdrop click to close only if clicking outside the sidebar
+
+
   return (
     <header className="w-full bg-transparent shadow-sm">
       {/* Mobile Header */}
       <nav className="lg:hidden bg-transparent">
         <div className="flex justify-between items-center px-4 py-4">
           <div className="flex items-center space-x-4">
-            {/* <FontAwesomeIcon icon={faBars} className="text-xl" /> */}
+            {/* Placeholder for hamburger menu */}
           </div>
           <Link to="/" className="text-2xl font-bold text-purple-700">
             <img src={logo} alt="logo" className="w-50 h-17" />
           </Link>
 
           <div className="flex items-center space-x-4">
-            {/* <FontAwesomeIcon icon={faMagnifyingGlass} className="text-xl" /> */}
-            
-            {isAuthenticated && (
-              <>
-                <div className="relative">
-                  <FontAwesomeIcon
-                    icon={faCartShopping}
-                    className="text-xl cursor-pointer"
-                    onClick={() => setIsCartOpen(true)}
-                  />
-                  {cartItems.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {cartItems.length}
-                    </span>
-                  )}
-                </div>
-                <Button variant="ghost" size="icon" className="hover:bg-purple-100" onClick={handleAuthClick}>
-                  <User className="h-5 w-5 text-purple-700" />
+            {/* Always show user icon in mobile view */}
+            {isAuthenticated ? (
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-purple-100"
+                  onClick={handleAuthClick}
+                >
+                  <User className="h-5 w-5 text-black" />
                 </Button>
-              </>
+                {isProfileOpen && (
+                  <div className="fixed inset-0 z-50">
+                    <div
+                      className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                    />
+                    <div
+                      className="absolute top-0 right-0 h-full w-full max-w-xs bg-white shadow-xl flex flex-col"
+                    >
+                      <div className="flex items-center justify-between p-4 border-b">
+                        <h2 className="text-xl font-semibold">Profile</h2>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Close profile sidebar"
+                          onClick={() => setIsProfileOpen(false)}
+                        >
+                          <X className="w-5 h-5" />
+                        </Button>
+                      </div>
+                      <div className="p-4 space-y-4">
+                        <div className="text-sm text-gray-700 border-b border-gray-100 pb-2">
+                          {user?.firstName} {user?.lastName}
+                        </div>
+                        <div>
+                        <Link
+                          to="/profile"
+                          className="block text-sm text-gray-700 hover:bg-gray-100 p-2 rounded"
+                        >
+                          Profile
+                        </Link>
+                        </div>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left text-sm text-red-600 hover:bg-gray-100 p-2 rounded"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link to="/authpage">
+                <Button variant="ghost" size="icon" className="hover:bg-purple-100">
+                  <User className="h-5 w-5 text-black" />
+                </Button>
+              </Link>
+            )}
+            {isAuthenticated && (
+              <div className="relative">
+                <FontAwesomeIcon
+                  icon={faCartShopping}
+                  className="text-xl cursor-pointer"
+                  onClick={() => setIsCartOpen(true)}
+                />
+                {cartItems.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartItems.length}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
-
-        {/* Mobile Menu with Header */}
-
       </nav>
 
       {/* Desktop Header */}
@@ -545,7 +546,7 @@ const Header: React.FC = () => {
           </div>
 
           <Link to={isAuthenticated ? "/" : "/"} className="text-3xl font-bold text-purple-700 ml-[100px] contain-content">
-            <img src={logo} alt="logo" width={240} height={60} className="w-60 h-17 " />
+            <img src={logo} alt="logo" width={240} height={60} className="w-60 h-17" />
           </Link>
 
           <div className="flex items-center space-x-6">
@@ -559,9 +560,8 @@ const Header: React.FC = () => {
                 </Link> */}
               </>
             )}
-            {/* <FontAwesomeIcon icon={faMagnifyingGlass} className="text-xl cursor-pointer" /> */}
             {isAuthenticated ? (
-              <div className="relative" ref={profileRef}>
+              <div className="relative" ref={desktopProfileRef}>
                 <FontAwesomeIcon
                   icon={faUser}
                   className="text-xl cursor-pointer"
@@ -610,31 +610,21 @@ const Header: React.FC = () => {
       {/* Cart Sidebar */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50">
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />
-
-          {/* Cart Sidebar */}
           <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl flex flex-col">
-            {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-xl font-semibold">Your Cart</h2>
               <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)}>
                 <X className="w-5 h-5" />
               </Button>
             </div>
-
-            {/* Promotional Banner */}
             <div className="bg-pink-50 border-b items-center">
               <img src={logo1} alt="logo" className="w-30 h-30 object-cover items-center ml-[170px] mt-[-10px]" />
             </div>
-
-            {/* Cart Items Header */}
             <div className="flex justify-between items-center p-4 border-b bg-gray-50">
               <span className="text-sm font-medium text-gray-600">PRODUCT</span>
               <span className="text-sm font-medium text-gray-600">TOTAL</span>
             </div>
-
-            {/* Cart Items */}
             <div className="flex-1 overflow-y-auto">
               {cartLoading ? (
                 <div className="space-y-4 p-4">
@@ -651,7 +641,6 @@ const Header: React.FC = () => {
                 <div className="space-y-4 p-4">
                   {cartItems.map((item) => (
                     <div key={item.id} className="flex gap-3">
-                      {/* Product Image */}
                       <div className="w-16 h-16 bg-pink-50 rounded-lg overflow-hidden flex-shrink-0">
                         <img
                           src={item.image || "/placeholder.svg"}
@@ -661,13 +650,9 @@ const Header: React.FC = () => {
                           className="w-full h-full object-cover"
                         />
                       </div>
-
-                      {/* Product Details */}
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-2">{item.name}</h3>
                         <p className="text-sm text-gray-600 mb-2">₹ {item.price.toFixed(2)}</p>
-
-                        {/* Quantity Controls */}
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
@@ -698,8 +683,6 @@ const Header: React.FC = () => {
                           </Button>
                         </div>
                       </div>
-
-                      {/* Price and Delete */}
                       <div className="flex flex-col items-end gap-2">
                         <span className="text-sm font-semibold">₹ {(item.price * item.quantity).toFixed(2)}</span>
                         <Button
@@ -721,8 +704,6 @@ const Header: React.FC = () => {
                 </div>
               )}
             </div>
-
-            {/* Footer */}
             {cartItems.length > 0 && (
               <div className="border-t bg-white p-6 space-y-6">
                 <div className="flex justify-between items-center">
@@ -736,7 +717,6 @@ const Header: React.FC = () => {
                     <span className="text-lg font-bold">₹ {totalAmount.toFixed(2)}</span>
                   )}
                 </div>
-
                 {totalAmount >= 500 && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                     <p className="text-sm text-green-700 font-medium">
@@ -744,8 +724,6 @@ const Header: React.FC = () => {
                     </p>
                   </div>
                 )}
-
-                {/* Address Section */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-800">Shipping Address</h3>
                   {defaultAddress ? (
@@ -769,7 +747,6 @@ const Header: React.FC = () => {
                       Add Address
                     </Button>
                   )}
-                  {/* Address Form Modal */}
                   {isAddressFormOpen && (
                     <div className="bg-gray-50 p-4 rounded-lg space-y-4">
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -780,7 +757,7 @@ const Header: React.FC = () => {
                           <input
                             type="text"
                             id="street"
-                            name="mainAddress"
+                            name="street"
                             value={addressForm.street}
                             onChange={handleAddressChange}
                             placeholder="Enter main address"
@@ -861,7 +838,6 @@ const Header: React.FC = () => {
                     </div>
                   )}
                 </div>
-
                 <Button
                   className="w-full bg-gray-800 hover:bg-gray-900 text-white py-3 rounded-lg transition-colors"
                   onClick={handleCheckout}

@@ -242,7 +242,7 @@ export default function UserProfile() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8 bg-white/80 backdrop-blur-sm rounded-2xl p-1 border border-amber-200">
+          <TabsList className="grid w-full grid-cols-3 mb-8 bg-white/80 backdrop-blur-sm rounded-2xl p-1 border border-amber-200">
             <TabsTrigger
               value="profile"
               className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white font-medium"
@@ -257,13 +257,13 @@ export default function UserProfile() {
               <Package className="w-4 h-4 mr-2" />
               Orders ({orders.length})
             </TabsTrigger>
-            <TabsTrigger
+            {/* <TabsTrigger
               value="addresses"
               className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white font-medium"
             >
               <MapPin className="w-4 h-4 mr-2" />
               Addresses
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger
               value="wishlist"
               className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white font-medium"
