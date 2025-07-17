@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Heart, ShoppingCart, Eye, Plus, Minus, Star, TrendingUp } from "lucide-react"
+import { Heart, ShoppingCart, Eye, Plus, Minus, Star, TrendingUp, X } from "lucide-react"
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
 import { Card, CardContent } from "../components/ui/card"
@@ -31,13 +31,33 @@ interface ProductQuantity {
   [productId: string]: number
 }
 
+interface CartItem {
+  id: string
+  name: string
+  price: number
+  quantity: number
+  image: string
+}
+
+interface ImagePreviewModal {
+  isOpen: boolean
+  imageUrl: string
+  productName: string
+}
+
 export default function BestSellerSection() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [quantities, setQuantities] = useState<ProductQuantity>({})
   const [wishlist, setWishlist] = useState<Set<string>>(new Set())
-  const [addingToCart, setAddingToCart] = useState<Set<string>>(new Set())
+  const [addingToCart] = useState<Set<string>>(new Set())
+  // Add state for image preview modal
+  const [imagePreview, setImagePreview] = useState<ImagePreviewModal>({
+    isOpen: false,
+    imageUrl: "",
+    productName: ""
+  })
 
   // Fetch products from API
   useEffect(() => {
@@ -87,50 +107,84 @@ export default function BestSellerSection() {
   }
 
   const addToCart = async (product: Product) => {
-    const quantity = quantities[product._id] || 1
+    const quantity = quantities[product._id] || 1;
 
-    try {
-      setAddingToCart((prev) => new Set([...prev, product._id]))
+    const newItem: CartItem = {
+      id: product._id,
+      name: product.name,
+      price: Number(product.sellingPrice),
+      quantity: quantity,
+      image: product.images[0]?.url || "/placeholder.svg?height=100&width=100",
+    };
 
-      const token = localStorage.getItem("token")
-      if (!token) {
-        toast("Authentication Required: Please login to add items to cart", { type: "error" })
-        return
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const response = await fetch('https://api.vivahartstudio.com/api/users/cart/add', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ 
+            productId: [product._id], 
+            quantity: [quantity] 
+          }),
+        });
+        const data = await response.json();
+        if (data.status !== 'success') {
+          window.location.reload();
+        } else {
+          toast.success('Product added to cart');
+        }
+      } catch (err) {
+        toast.error('Error adding product to cart');
+        console.error("Error adding to cart:", err);
       }
-
-      const response = await fetch("https://api.vivahartstudio.com/api/users/cart/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          productId: [product._id],
-          quantity: [quantity]  
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to add to cart")
+    } else {
+      // Handle non-logged in users - store in localStorage
+      const savedCart = localStorage.getItem('cartItems');
+      let cartItems: CartItem[] = [];
+      
+      // Carefully parse existing cart, with error handling
+      try {
+        cartItems = savedCart ? JSON.parse(savedCart) : [];
+        // Validate that cartItems is an array
+        if (!Array.isArray(cartItems)) {
+          cartItems = [];
+        }
+      } catch (e) {
+        console.error('Error parsing cart data:', e);
+        cartItems = [];
       }
-      window.location.reload()
-      toast(`Added to Cart! 🛒: ${product.name} (${quantity}x) added to your cart`, { type: "success" })
-
-      // Reset quantity to 1 after adding to cart
-      setQuantities((prev) => ({
-        ...prev,
-        [product._id]: 1,
-      }))
-    } catch (err) {
-      toast("Error: Failed to add item to cart. Please try again.", { type: "error" })
-      console.error("Error adding to cart:", err)
-    } finally {
-      setAddingToCart((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(product._id)
-        return newSet
-      })
+      
+      // Check if item already exists in cart
+      const existingItemIndex = cartItems.findIndex(item => item.id === product._id);
+      
+      if (existingItemIndex !== -1) {
+        // Update quantity if item exists
+        cartItems[existingItemIndex].quantity += quantity;
+      } else {
+        // Add new item if it doesn't exist
+        cartItems.push(newItem);
+      }
+      
+      // Save updated cart to localStorage
+      try {
+        localStorage.setItem('cartItems', JSON.stringify(cartItems));
+        toast.success('Product added to cart');
+        window.dispatchEvent(new Event('storage')); // Trigger storage event for cart update
+      } catch (e) {
+        console.error('Error saving cart data:', e);
+        toast.error('Failed to add product to cart');
+      }
     }
+
+    // Reset quantity to 1 after adding to cart
+    setQuantities((prev) => ({
+      ...prev,
+      [product._id]: 1,
+    }));
   }
 
   const toggleWishlist = (productId: string) => {
@@ -152,6 +206,24 @@ export default function BestSellerSection() {
     const originalPrice = price * 1.25 // Assume 20% discount for demo
     const discount = Math.round(((originalPrice - price) / originalPrice) * 100)
     return { originalPrice, discount }
+  }
+
+  // Add function to handle image preview
+  const handleImagePreview = (imageUrl: string, productName: string) => {
+    setImagePreview({
+      isOpen: true,
+      imageUrl,
+      productName
+    })
+  }
+
+  // Add function to close preview
+  const closeImagePreview = () => {
+    setImagePreview({
+      isOpen: false,
+      imageUrl: "",
+      productName: ""
+    })
   }
 
   if (loading) {
@@ -201,6 +273,38 @@ export default function BestSellerSection() {
         </div>
       </div>
 
+      {/* Add Image Preview Modal */}
+      {imagePreview.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80" onClick={closeImagePreview}>
+          <div 
+            className="relative w-full max-h-[90vh] md:max-w-3xl bg-white rounded-3xl overflow-hidden shadow-2xl transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="absolute top-4 right-4 z-10">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full bg-white/90 backdrop-blur-sm hover:bg-white"
+                onClick={closeImagePreview}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            <div className="relative w-full h-full max-h-[80vh] overflow-hidden">
+              <img
+                src={imagePreview.imageUrl}
+                alt={imagePreview.productName}
+                className="w-full h-full object-contain"
+                style={{ maxHeight: 'calc(90vh - 120px)' }}
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 md:p-6">
+                <h3 className="text-lg md:text-xl font-semibold text-white">{imagePreview.productName}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-amber-900 mb-4">BEST SELLING RAKHIS</h2>
@@ -245,7 +349,10 @@ export default function BestSellerSection() {
                     />
                   </button>
 
-                  <button className="absolute top-28 right-4 z-20 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100">
+                  <button 
+                    onClick={() => handleImagePreview(product.images[0]?.url || "/placeholder.svg", product.name)}
+                    className="absolute top-28 right-4 z-20 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100"
+                  >
                     <Eye className="w-4 h-4 text-gray-600 hover:text-amber-600" />
                   </button>
 

@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { ChevronLeft, ChevronRight, Heart, Minus, Plus, ShoppingCart } from "lucide-react"
+import { ChevronLeft, ChevronRight, Heart, Minus, Plus, ShoppingCart, Eye, X } from "lucide-react"
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
 import useAuthStore, { selectIsAuthenticated } from '../stores/useAuthStore'
 import { Card } from "./ui/card"
 import { CardContent } from "./ui/card"
 import rakhi from '../assets/image/rakhi.png'
+import { toast } from "react-toastify"
 
 interface Subcategory {
   _id: string
@@ -41,6 +42,12 @@ interface CartItem {
   image: string
 }
 
+interface ImagePreviewModal {
+  isOpen: boolean
+  imageUrl: string
+  productName: string
+}
+
 export default function CategoriesSection() {
   const [selectedSubcategory, setSelectedSubcategory] = useState("all")
   const [subcategories, setSubcategories] = useState<Subcategory[]>([
@@ -56,6 +63,11 @@ export default function CategoriesSection() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [quantities, setQuantities] = useState<ProductQuantity>({})
   const isAuthenticated = useAuthStore(selectIsAuthenticated)
+  const [imagePreview, setImagePreview] = useState<ImagePreviewModal>({
+    isOpen: false,
+    imageUrl: "",
+    productName: ""
+  })
 
   // Fetch subcategories for Rakhi category on mount
   useEffect(() => {
@@ -135,7 +147,7 @@ export default function CategoriesSection() {
 
   // Add to cart function
   const addToCart = async (product: Product) => {
-    const quantity = quantities[product.id] || 1
+    const quantity = quantities[product.id] || 1;
 
     const newItem: CartItem = {
       id: product.id,
@@ -143,43 +155,70 @@ export default function CategoriesSection() {
       price: product.price,
       quantity: quantity,
       image: product.images[0] || "/placeholder.svg?height=100&width=100",
-    }
+    };
 
-    if (isAuthenticated) {
+    const token = localStorage.getItem('token');
+    if (token) {
       try {
         const response = await fetch('https://api.vivahartstudio.com/api/users/cart/add', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ productId: [product.id], quantity: [quantity] }),
-        })
-        const data = await response.json()
+          body: JSON.stringify({ 
+            productId: [product.id], 
+            quantity: [quantity] 
+          }),
+        });
+        const data = await response.json();
         if (data.status !== 'success') {
-          window.location.reload()
+          window.location.reload();
         } else {
-          console.log('Product added to cart:', data)
+          toast.success('Product added to cart');
         }
       } catch (err) {
-        setError('Error adding product to cart')
+        setError('Error adding product to cart');
       }
     } else {
-      const savedCart = localStorage.getItem('cartItems')
-      const cartItems: CartItem[] = savedCart ? JSON.parse(savedCart) : []
-      const existingItem = cartItems.find((item) => item.id === product.id)
-      if (existingItem) {
-        cartItems.forEach((item) => {
-          if (item.id === product.id) {
-            item.quantity += quantity
-          }
-        })
-      } else {
-        cartItems.push(newItem)
+      // Handle non-logged in users - store in localStorage
+      const savedCart = localStorage.getItem('cartItems');
+      let cartItems: CartItem[] = [];
+      
+      // Carefully parse existing cart, with error handling
+      try {
+        cartItems = savedCart ? JSON.parse(savedCart) : [];
+        // Validate that cartItems is an array
+        if (!Array.isArray(cartItems)) {
+          cartItems = [];
+        }
+      } catch (e) {
+        console.error('Error parsing cart data:', e);
+        cartItems = [];
       }
-      localStorage.setItem('cartItems', JSON.stringify(cartItems))
+      
+      // Check if item already exists in cart
+      const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
+      
+      if (existingItemIndex !== -1) {
+        // Update quantity if item exists
+        cartItems[existingItemIndex].quantity += quantity;
+      } else {
+        // Add new item if it doesn't exist
+        cartItems.push(newItem);
+      }
+      
+      // Save updated cart to localStorage
+      try {
+        localStorage.setItem('cartItems', JSON.stringify(cartItems));
+        toast.success('Product added to cart');
+        window.dispatchEvent(new Event('storage')); // Trigger storage event for cart update
+      } catch (e) {
+        console.error('Error saving cart data:', e);
+        toast.error('Failed to add product to cart');
+      }
     }
-  }
+  };
 
   const updateQuantity = (productId: string, change: number) => {
     setQuantities((prev) => {
@@ -257,6 +296,24 @@ export default function CategoriesSection() {
     }
   }
 
+  // Add function to handle image preview
+  const handleImagePreview = (imageUrl: string, productName: string) => {
+    setImagePreview({
+      isOpen: true,
+      imageUrl,
+      productName
+    })
+  }
+
+  // Add function to close preview
+  const closeImagePreview = () => {
+    setImagePreview({
+      isOpen: false,
+      imageUrl: "",
+      productName: ""
+    })
+  }
+
   return (
     <div className="max-w-8xl mx-auto p-4 relative bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
       {loading && <p className="text-center">Loading...</p>}
@@ -269,6 +326,38 @@ export default function CategoriesSection() {
           }}
         ></div>
       </div>
+
+      {/* Add Image Preview Modal */}
+      {imagePreview.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80" onClick={closeImagePreview}>
+          <div 
+            className="relative w-full max-h-[90vh] md:max-w-3xl bg-white rounded-3xl overflow-hidden shadow-2xl transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="absolute top-4 right-4 z-10">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full bg-white/90 backdrop-blur-sm hover:bg-white"
+                onClick={closeImagePreview}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            <div className="relative w-full h-full max-h-[80vh] overflow-hidden">
+              <img
+                src={imagePreview.imageUrl}
+                alt={imagePreview.productName}
+                className="w-full h-full object-contain"
+                style={{ maxHeight: 'calc(90vh - 120px)' }}
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 md:p-6">
+                <h3 className="text-lg md:text-xl font-semibold text-white">{imagePreview.productName}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Subcategory Slider */}
       <div className="relative mb-8">
@@ -352,6 +441,14 @@ export default function CategoriesSection() {
                       wishlist.has(product.id) ? "fill-red-500 text-red-500" : "text-gray-600 hover:text-red-500"
                     }`}
                   />
+                </button>
+
+                {/* Add Eye Button */}
+                <button 
+                  onClick={() => handleImagePreview(product.images[0] || "/placeholder.svg", product.name)}
+                  className="absolute top-16 right-4 z-20 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100"
+                >
+                  <Eye className="w-4 h-4 text-gray-600 hover:text-amber-600" />
                 </button>
 
                 <img
