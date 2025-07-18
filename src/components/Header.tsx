@@ -445,6 +445,7 @@ const Header: React.FC = () => {
           },
         };
 
+        
         const razorpay = new (window as any).Razorpay(options);
         razorpay.open();
         razorpay.on('payment.failed', function (response: any) {
