@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { ChevronLeft, ChevronRight, Heart, Minus, Plus, ShoppingCart, Eye, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Heart, Minus, Plus, ShoppingCart, Eye, X, Check } from "lucide-react"
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
 import useAuthStore, { selectIsAuthenticated } from '../stores/useAuthStore'
@@ -48,6 +48,13 @@ interface ImagePreviewModal {
   productName: string
 }
 
+interface CartSuccessModal {
+  isOpen: boolean
+  productName: string
+  productImage: string
+  quantity: number
+}
+
 export default function CategoriesSection() {
   const [selectedSubcategory, setSelectedSubcategory] = useState("all")
   const [subcategories, setSubcategories] = useState<Subcategory[]>([
@@ -67,6 +74,12 @@ export default function CategoriesSection() {
     isOpen: false,
     imageUrl: "",
     productName: ""
+  })
+  const [cartSuccess, setCartSuccess] = useState<CartSuccessModal>({
+    isOpen: false,
+    productName: "",
+    productImage: "",
+    quantity: 0
   })
 
   // Fetch subcategories for Rakhi category on mount
@@ -185,10 +198,8 @@ export default function CategoriesSection() {
       const savedCart = localStorage.getItem('cartItems');
       let cartItems: CartItem[] = [];
       
-      // Carefully parse existing cart, with error handling
       try {
         cartItems = savedCart ? JSON.parse(savedCart) : [];
-        // Validate that cartItems is an array
         if (!Array.isArray(cartItems)) {
           cartItems = [];
         }
@@ -197,22 +208,30 @@ export default function CategoriesSection() {
         cartItems = [];
       }
       
-      // Check if item already exists in cart
       const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
       
       if (existingItemIndex !== -1) {
-        // Update quantity if item exists
         cartItems[existingItemIndex].quantity += quantity;
       } else {
-        // Add new item if it doesn't exist
         cartItems.push(newItem);
       }
       
-      // Save updated cart to localStorage
       try {
         localStorage.setItem('cartItems', JSON.stringify(cartItems));
-        toast.success('Product added to cart');
-        window.dispatchEvent(new Event('storage')); // Trigger storage event for cart update
+        // Show success modal instead of toast for non-logged in users
+        setCartSuccess({
+          isOpen: true,
+          productName: product.name,
+          productImage: product.images[0] || "/placeholder.svg?height=100&width=100",
+          quantity: quantity
+        });
+        
+        // Auto close after 3 seconds
+        setTimeout(() => {
+          setCartSuccess(prev => ({ ...prev, isOpen: false }));
+        }, 3000);
+        
+        window.dispatchEvent(new Event('storage'));
       } catch (e) {
         console.error('Error saving cart data:', e);
         toast.error('Failed to add product to cart');
@@ -359,6 +378,41 @@ export default function CategoriesSection() {
         </div>
       )}
 
+      {/* Cart Success Modal */}
+      {cartSuccess.isOpen && (
+        <div className="fixed bottom-4 right-4 z-[100] animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl p-4 border-2 border-green-100 max-w-sm">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 bg-green-100 rounded-xl p-2">
+                <Check className="w-6 h-6 text-green-600" />
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-gray-900 mb-1">Added to Cart!</h4>
+                <div className="flex items-center gap-3 mb-2">
+                  <img 
+                    src={cartSuccess.productImage} 
+                    alt={cartSuccess.productName}
+                    className="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                  />
+                  <div>
+                    <p className="text-sm text-gray-600 line-clamp-1">{cartSuccess.productName}</p>
+                    <p className="text-sm font-medium text-gray-900">Quantity: {cartSuccess.quantity}</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setCartSuccess(prev => ({ ...prev, isOpen: false }))}
+                className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Subcategory Slider */}
       <div className="relative mb-8">
         <div className="flex items-center">
@@ -446,7 +500,7 @@ export default function CategoriesSection() {
                 {/* Add Eye Button */}
                 <button 
                   onClick={() => handleImagePreview(product.images[0] || "/placeholder.svg", product.name)}
-                  className="absolute top-16 right-4 z-20 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100"
+                  className="absolute top-16 right-4 z-20 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110"
                 >
                   <Eye className="w-4 h-4 text-gray-600 hover:text-amber-600" />
                 </button>

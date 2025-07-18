@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Heart, ShoppingCart, Eye, Plus, Minus, Star, TrendingUp, X } from "lucide-react"
+import { Heart, ShoppingCart, Eye, Plus, Minus, Star, TrendingUp, X, Check } from "lucide-react"
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
 import { Card, CardContent } from "../components/ui/card"
@@ -45,6 +45,13 @@ interface ImagePreviewModal {
   productName: string
 }
 
+interface CartSuccessModal {
+  isOpen: boolean
+  productName: string
+  productImage: string
+  quantity: number
+}
+
 export default function BestSellerSection() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,6 +64,12 @@ export default function BestSellerSection() {
     isOpen: false,
     imageUrl: "",
     productName: ""
+  })
+  const [cartSuccess, setCartSuccess] = useState<CartSuccessModal>({
+    isOpen: false,
+    productName: "",
+    productImage: "",
+    quantity: 0
   })
 
   // Fetch products from API
@@ -172,7 +185,19 @@ export default function BestSellerSection() {
       // Save updated cart to localStorage
       try {
         localStorage.setItem('cartItems', JSON.stringify(cartItems));
-        toast.success('Product added to cart');
+        // Show success modal instead of toast for non-logged in users
+        setCartSuccess({
+          isOpen: true,
+          productName: product.name,
+          productImage: product.images[0]?.url || "/placeholder.svg?height=100&width=100",
+          quantity: quantity
+        });
+        
+        // Auto close after 3 seconds
+        setTimeout(() => {
+          setCartSuccess(prev => ({ ...prev, isOpen: false }));
+        }, 3000);
+        
         window.dispatchEvent(new Event('storage')); // Trigger storage event for cart update
       } catch (e) {
         console.error('Error saving cart data:', e);
@@ -305,6 +330,41 @@ export default function BestSellerSection() {
         </div>
       )}
 
+      {/* Cart Success Modal */}
+      {cartSuccess.isOpen && (
+        <div className="fixed bottom-4 right-4 z-[100] animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl p-4 border-2 border-green-100 max-w-sm">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 bg-green-100 rounded-xl p-2">
+                <Check className="w-6 h-6 text-green-600" />
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-gray-900 mb-1">Added to Cart!</h4>
+                <div className="flex items-center gap-3 mb-2">
+                  <img 
+                    src={cartSuccess.productImage} 
+                    alt={cartSuccess.productName}
+                    className="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                  />
+                  <div>
+                    <p className="text-sm text-gray-600 line-clamp-1">{cartSuccess.productName}</p>
+                    <p className="text-sm font-medium text-gray-900">Quantity: {cartSuccess.quantity}</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setCartSuccess(prev => ({ ...prev, isOpen: false }))}
+                className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-amber-900 mb-4">BEST SELLING RAKHIS</h2>
@@ -351,7 +411,7 @@ export default function BestSellerSection() {
 
                   <button 
                     onClick={() => handleImagePreview(product.images[0]?.url || "/placeholder.svg", product.name)}
-                    className="absolute top-28 right-4 z-20 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100"
+                    className="absolute top-28 right-4 z-20 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110 "
                   >
                     <Eye className="w-4 h-4 text-gray-600 hover:text-amber-600" />
                   </button>

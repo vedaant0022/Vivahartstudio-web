@@ -424,7 +424,7 @@ const Header: React.FC = () => {
         const { razorpayOrderId, order, transactionId } = data;
 
         const options = {
-          key: 'rzp_test_0Y07z6SsWPMHIp',
+          key: 'rzp_live_PGEwo7ezA19T7p',
           amount: order.totalAmount * 100,
           currency: 'INR',
           name: 'Your Store Name',
