@@ -123,9 +123,9 @@ const Header: React.FC = () => {
             },
           });
           const data = await response.json();
-          if (data.status === 'success' && data.data[0]?.cart) {
+          if (data.status === 'success' && data.data) {
             setCartItems(
-              data.data[0].cart.map((item: any) => ({
+              data.data.map((item: any) => ({
                 id: item.product._id,
                 name: item.product.name,
                 price: Number(item.product.sellingPrice),
@@ -133,11 +133,6 @@ const Header: React.FC = () => {
                 image: item.product.images[0]?.url || '/placeholder.svg?height=100&width=100',
               }))
             );
-            const defaultAddr = data.data[0].addresses?.find((addr: Address) => addr.isDefault);
-            if (defaultAddr) {
-              setDefaultAddress(defaultAddr);
-              setAddressForm(defaultAddr);
-            }
           }
         } catch (err) {
           console.error('Error fetching cart:', err);
@@ -514,8 +509,8 @@ const Header: React.FC = () => {
       });
       const currentCartData = await currentCartResponse.json();
       
-      const currentCart = currentCartData.status === 'success' && currentCartData.data[0]?.cart 
-        ? currentCartData.data[0].cart 
+      const currentCart = currentCartData.status === 'success' && currentCartData.data 
+        ? currentCartData.data 
         : [];
 
       // Create a map of existing items with their quantities
@@ -567,9 +562,9 @@ const Header: React.FC = () => {
         },
       });
       const data = await response.json();
-      if (data.status === 'success' && data.data[0]?.cart) {
+      if (data.status === 'success' && data.data) {
         setCartItems(
-          data.data[0].cart.map((item: any) => ({
+          data.data.map((item: any) => ({
             id: item.product._id,
             name: item.product.name,
             price: Number(item.product.sellingPrice),
