@@ -439,7 +439,7 @@ export default function CategoriesSection() {
                 onClick={() => handleSubcategoryChange(subcategory._id)}
               >
                 <div
-                  className={`w-20 h-20 rounded-full border-2 overflow-hidden mb-2 ${
+                  className={`w-30 h-30 rounded-full border-2 overflow-hidden mb-2 ${
                     selectedSubcategory === subcategory._id
                       ? "border-purple-500 shadow-lg"
                       : "border-pink-200 hover:border-purple-300"
