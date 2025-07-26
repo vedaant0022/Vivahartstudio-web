@@ -8,6 +8,7 @@ import { Card, CardContent } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { Separator } from "../components/ui/separator"
 import FullScreenLoader from "../components/Fullscreenloder"
+import { baseURL } from "../utils/api"
 
 interface OrderItem {
   product: {
@@ -73,7 +74,7 @@ export default function OrderConfirmation() {
 
       try {
         const token = localStorage.getItem("token")
-        const response = await fetch(`https://api.vivahartstudio.com/api/orders/${orderId}`, {
+        const response = await fetch(`${baseURL}/api/orders/${orderId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

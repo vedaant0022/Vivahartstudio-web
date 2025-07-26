@@ -1,3 +1,4 @@
+import { baseURL } from '../utils/api';
 import { create } from 'zustand';
 
 // Cache initial state to avoid re-parsing on every render
@@ -39,7 +40,7 @@ const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email: string, password: string) => {
     try {
-      const response = await fetch('https://api.vivahartstudio.com/api/users/login', {
+      const response = await fetch(`${baseURL}/api/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,7 +75,7 @@ const useAuthStore = create<AuthState>((set) => ({
     role?: string;
   }) => {
     try {
-      const response = await fetch('https://api.vivahartstudio.com/api/users/signup', {
+      const response = await fetch(`${baseURL}/api/users/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,7 +100,7 @@ const useAuthStore = create<AuthState>((set) => ({
 
   verifyEmail: async (email: string, otp: string) => {
     try {
-      const response = await fetch('https://api.vivahartstudio.com/api/users/verify-email', {
+      const response = await fetch(`${baseURL}/api/users/verify-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

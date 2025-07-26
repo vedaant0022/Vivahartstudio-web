@@ -11,6 +11,7 @@ import logo from '../assets/image/logo.png';
 import logo1 from '../assets/image/logo1.png';
 import { Button } from './ui/button';
 import { LoginReminderModal } from './ui/login-reminder-modal';
+import { baseURL } from '../utils/api';
 
 interface CartItem {
   id: string;
@@ -95,7 +96,7 @@ const Header: React.FC = () => {
                 const productIds = localCartItems.map((item: CartItem) => item.id);
                 const quantities = localCartItems.map((item: CartItem) => item.quantity);
                 
-                await fetch('https://api.vivahartstudio.com/api/users/cart/add', {
+                await fetch(`${baseURL}/api/users/cart/add`, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -116,7 +117,7 @@ const Header: React.FC = () => {
           }
 
           // Then fetch the updated cart from server
-          const response = await fetch('https://api.vivahartstudio.com/api/users/cart-users', {
+          const response = await fetch(`${baseURL}/api/users/cart-users`, {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`,
@@ -217,7 +218,7 @@ const Header: React.FC = () => {
             ? { productId: [productId], quantity: [quantity] }
             : { productId: productId, quantity: quantity };
 
-          await fetch(`https://api.vivahartstudio.com${endpoint}`, {
+          await fetch(`${baseURL}${endpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -312,7 +313,7 @@ const Header: React.FC = () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        await fetch('https://api.vivahartstudio.com/api/users/cart/remove', {
+        await fetch(`${baseURL}/api/users/cart/remove`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -353,7 +354,7 @@ const Header: React.FC = () => {
     if (token) {
       try {
         for (const item of cartItems) {
-          await fetch('https://api.vivahartstudio.com/api/users/cart/remove', {
+          await fetch(`${baseURL}/api/users/cart/remove`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -396,7 +397,7 @@ const Header: React.FC = () => {
     }
 
     try {
-      const response = await fetch('https://api.vivahartstudio.com/api/orders/', {
+      const response = await fetch(`${baseURL}/api/orders/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -501,7 +502,7 @@ const Header: React.FC = () => {
       localStorage.removeItem('cartItems');
 
       // First fetch current cart to check for existing items
-      const currentCartResponse = await fetch('https://api.vivahartstudio.com/api/users/cart-users', {
+      const currentCartResponse = await fetch(`${baseURL}/api/users/cart-users`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -536,7 +537,7 @@ const Header: React.FC = () => {
 
       if (itemsToAdd.length > 0) {
         // Make a single API call for all new items
-        const addResponse = await fetch('https://api.vivahartstudio.com/api/users/cart/add', {
+        const addResponse = await fetch(`${baseURL}/api/users/cart/add`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -555,7 +556,7 @@ const Header: React.FC = () => {
       }
 
       // Refresh cart from server
-      const response = await fetch('https://api.vivahartstudio.com/api/users/cart-users', {
+      const response = await fetch(`${baseURL}/api/users/cart-users`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,

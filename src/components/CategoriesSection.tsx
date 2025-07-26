@@ -9,6 +9,7 @@ import { Card } from "./ui/card"
 import { CardContent } from "./ui/card"
 import rakhi from '../assets/image/rakhi.png'
 import { toast } from "react-toastify"
+import { baseURL } from "../utils/api"
 
 interface Subcategory {
   _id: string
@@ -88,7 +89,7 @@ export default function CategoriesSection() {
       try {
         setLoading(true)
         const response = await fetch(
-          "https://api.vivahartstudio.com/api/inventory/categories/686ee620362a1457eb452471/subcategories"
+          `${baseURL}/api/inventory/categories/686ee620362a1457eb452471/subcategories`
         )
         const data = await response.json()
         if (Array.isArray(data)) {
@@ -117,7 +118,7 @@ export default function CategoriesSection() {
     const fetchProducts = async () => {
       try {
         setLoading(true)
-        const url = new URL("https://api.vivahartstudio.com/api/inventory/products")
+        const url = new URL(`${baseURL}/api/inventory/products`)
         url.searchParams.append("page", currentPage.toString())
         url.searchParams.append("limit", productsPerPage.toString())
         url.searchParams.append("sort", "-createdAt")
@@ -173,7 +174,7 @@ export default function CategoriesSection() {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const response = await fetch('https://api.vivahartstudio.com/api/users/cart/add', {
+        const response = await fetch(`${baseURL}/api/users/cart/add`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -262,7 +263,7 @@ export default function CategoriesSection() {
 
     try {
       const method = isInWishlist ? 'DELETE' : 'POST'
-      const endpoint = `https://api.vivahartstudio.com/api/users/wishlist/${isInWishlist ? 'remove' : 'add'}`
+      const endpoint = `${baseURL}/api/users/wishlist/${isInWishlist ? 'remove' : 'add'}`
       const response = await fetch(endpoint, {
         method,
         headers: {

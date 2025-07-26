@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Separator } from "../components/ui/separator"
+import { baseURL } from "../utils/api"
 
 interface Address {
   street: string
@@ -106,7 +107,7 @@ export default function UserProfile() {
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch("https://api.vivahartstudio.com/api/users/profile", {
+      const response = await fetch(`${baseURL}/api/users/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -125,7 +126,7 @@ export default function UserProfile() {
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem("token")
-      const response = await fetch("https://api.vivahartstudio.com/api/orders/", {
+      const response = await fetch(`${baseURL}/api/orders/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

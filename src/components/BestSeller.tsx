@@ -7,6 +7,7 @@ import { Badge } from "../components/ui/badge"
 import { Card, CardContent } from "../components/ui/card"
 import { toast } from "react-toastify"
 import InlineLoader from "./inline-loader"
+import { baseURL } from "../utils/api"
 
 interface Product {
   _id: string
@@ -80,7 +81,7 @@ export default function BestSellerSection() {
   const fetchProducts = async () => {
     try {
       setLoading(true)
-      const response = await fetch("https://api.vivahartstudio.com/api/inventory/products")
+      const response = await fetch(`${baseURL}/api/inventory/products`)
 
       if (!response.ok) {
         throw new Error("Failed to fetch products")
@@ -133,7 +134,7 @@ export default function BestSellerSection() {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const response = await fetch('https://api.vivahartstudio.com/api/users/cart/add', {
+        const response = await fetch(`${baseURL}/api/users/cart/add`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

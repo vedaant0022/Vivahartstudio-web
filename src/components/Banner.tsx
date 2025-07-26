@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { baseURL } from '../utils/api';
+
 
 // Types for banner data
 interface BannerImage {
@@ -48,7 +50,7 @@ const Banner: React.FC = () => {
     const fetchBanners = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://api.vivahartstudio.com/api/banners', {
+        const response = await fetch(`${baseURL}/api/banners`, {
           headers: {
             'Authorization': 'Bearer your_jwt_token_here' // Replace with actual token
           }
